@@ -484,6 +484,100 @@ var ART = (function () {
     return parts;
   };
 
+  /* --- frog: eyes on TOP of a wide flat head, a mouth right across the
+         face, splayed haunches and webbed feet. The frog puzzles used to
+         draw a duck and a bunny; the words said frog and the picture said
+         bird, which is the one thing a puzzle must never do. No beak here,
+         no ears, and the silhouette is wider than it is tall. --- */
+  SPECIES.frog = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, i;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.02, s * 1.34, s * .24); }
+    /* back haunches, then the long webbed back feet */
+    ink(S('path', { d: 'M' + r2(-s * .74) + ',' + r2(s * 1.0) + ' q' + r2(-s * .86) + ',' + r2(s * .16) + ' ' + r2(-s * .52) + ',' + r2(s * .88) + ' q' + r2(s * .3) + ',' + r2(s * .3) + ' ' + r2(s * .68) + ',' + r2(-s * .1) + ' Z', fill: c.dark }, g), lw);
+    ink(S('path', { d: 'M' + r2(s * .74) + ',' + r2(s * 1.0) + ' q' + r2(s * .86) + ',' + r2(s * .16) + ' ' + r2(s * .52) + ',' + r2(s * .88) + ' q' + r2(-s * .3) + ',' + r2(s * .3) + ' ' + r2(-s * .68) + ',' + r2(-s * .1) + ' Z', fill: c.dark }, g), lw);
+    for (i = 0; i < 2; i++) {
+      var sx = i ? 1 : -1;
+      ink(S('path', { d: 'M' + r2(sx * s * .96) + ',' + r2(s * 1.72) + ' q' + r2(sx * s * .62) + ',' + r2(-s * .06) + ' ' + r2(sx * s * .74) + ',' + r2(s * .3) + ' q' + r2(-sx * s * .34) + ',' + r2(s * .22) + ' ' + r2(-sx * s * .78) + ',' + r2(s * .04) + ' Z', fill: c.paint }, g), lw * .9);
+    }
+    /* squat wide body */
+    ink(S('ellipse', { cx: 0, cy: s * 1.06, rx: s * 1.16, ry: s * .8, fill: c.paint }, g), lw);
+    ink(S('ellipse', { cx: 0, cy: s * 1.3, rx: s * .68, ry: s * .46, fill: c.light }, g), lw * .8);
+    /* little front arms resting on the ground */
+    ink(S('path', { d: 'M' + r2(-s * .52) + ',' + r2(s * 1.44) + ' q' + r2(-s * .26) + ',' + r2(s * .38) + ' ' + r2(s * .1) + ',' + r2(s * .48), fill: 'none' }, g), lw * 1.5);
+    ink(S('path', { d: 'M' + r2(s * .52) + ',' + r2(s * 1.44) + ' q' + r2(s * .26) + ',' + r2(s * .38) + ' ' + r2(-s * .1) + ',' + r2(s * .48), fill: 'none' }, g), lw * 1.5);
+    /* head: wider than tall, so it never reads as a round cat head */
+    ink(S('ellipse', { cx: 0, cy: s * .1, rx: s * 1.04, ry: s * .78, fill: c.paint }, g), lw);
+    /* the two eye domes sit ON TOP of the head, which is the whole tell */
+    ink(S('circle', { cx: -s * .52, cy: -s * .58, r: s * .44, fill: c.paint }, g), lw);
+    ink(S('circle', { cx: s * .52, cy: -s * .58, r: s * .44, fill: c.paint }, g), lw);
+    var parts = sleepy(eyes(g, s, { spread: .52, y: -.58, r: .27, look: o.look }), c.mood);
+    /* nostrils, then the wide mouth right across the face */
+    S('circle', { cx: -s * .2, cy: s * .18, r: s * .07, fill: INK, opacity: '.7' }, g);
+    S('circle', { cx: s * .2, cy: s * .18, r: s * .07, fill: INK, opacity: '.7' }, g);
+    if (c.mood === 'sad') {
+      ink(S('path', { d: 'M' + r2(-s * .68) + ',' + r2(s * .64) + ' q' + r2(s * .68) + ',' + r2(-s * .34) + ' ' + r2(s * 1.36) + ',0', fill: 'none' }, g), lw * .95);
+    } else if (c.mood === 'flat') {
+      ink(S('line', { x1: -s * .66, y1: s * .5, x2: s * .66, y2: s * .5 }, g), lw * .95);
+    } else {
+      ink(S('path', { d: 'M' + r2(-s * .78) + ',' + r2(s * .38) + ' q' + r2(s * .78) + ',' + r2(s * .48) + ' ' + r2(s * 1.56) + ',0', fill: 'none' }, g), lw * .95);
+    }
+    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .74, .34); }
+    return parts;
+  };
+
+  /* --- hen: comb, wattle, short beak and a fan of tail feathers.
+         The river crossing said "hen" and drew a duck. --- */
+  SPECIES.hen = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, i;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.12, s * 1.06, s * .2); }
+    /* scaly legs with three toes each */
+    for (i = 0; i < 2; i++) {
+      var lx = i ? s * .34 : -s * .34;
+      ink(S('line', { x1: lx, y1: s * 1.5, x2: lx, y2: s * 1.92 }, g), lw * 1.1).setAttribute('stroke', '#E8862A');
+      ink(S('path', { d: 'M' + r2(lx - s * .28) + ',' + r2(s * 2.04) + ' L' + r2(lx) + ',' + r2(s * 1.92) + ' L' + r2(lx + s * .28) + ',' + r2(s * 2.04) + ' M' + r2(lx) + ',' + r2(s * 1.92) + ' L' + r2(lx) + ',' + r2(s * 2.08), fill: 'none' }, g), lw * .8).setAttribute('stroke', '#E8862A');
+    }
+    /* tail feathers, swept up behind */
+    for (i = 0; i < 3; i++) {
+      ink(S('path', { d: 'M' + r2(-s * .74) + ',' + r2(s * 1.06) + ' q' + r2(-s * (.9 + i * .16)) + ',' + r2(-s * (.16 + i * .3)) + ' ' + r2(-s * (.72 + i * .1)) + ',' + r2(-s * (.86 + i * .34)) + ' q' + r2(s * .5) + ',' + r2(s * .22) + ' ' + r2(s * .78) + ',' + r2(s * .82) + ' Z', fill: i === 1 ? c.dark : c.paint }, g), lw * .9);
+    }
+    /* plump body and a tucked wing */
+    ink(S('ellipse', { cx: s * .04, cy: s * 1.04, rx: s * .96, ry: s * .8, fill: c.paint }, g), lw);
+    ink(S('path', { d: 'M' + r2(-s * .5) + ',' + r2(s * .88) + ' q' + r2(s * .72) + ',' + r2(-s * .22) + ' ' + r2(s * .96) + ',' + r2(s * .3) + ' q' + r2(-s * .5) + ',' + r2(s * .46) + ' ' + r2(-s * .96) + ',' + r2(-s * .3) + ' Z', fill: c.dark }, g), lw * .85);
+    /* head */
+    ink(S('circle', { cx: 0, cy: 0, r: s * .78, fill: c.paint }, g), lw);
+    /* comb: three red bumps along the top */
+    ink(S('path', { d: 'M' + r2(-s * .44) + ',' + r2(-s * .62) + ' q' + r2(s * .04) + ',' + r2(-s * .42) + ' ' + r2(s * .3) + ',' + r2(-s * .2) + ' q' + r2(s * .06) + ',' + r2(-s * .38) + ' ' + r2(s * .32) + ',' + r2(-s * .16) + ' q' + r2(s * .1) + ',' + r2(-s * .32) + ' ' + r2(s * .3) + ',' + r2(-s * .02) + ' q' + r2(s * .06) + ',' + r2(s * .34) + ' ' + r2(-s * .16) + ',' + r2(s * .56) + ' Z', fill: '#E8434F' }, g), lw * .85);
+    /* short beak and the wattle under it */
+    ink(S('path', { d: 'M' + r2(s * .6) + ',' + r2(s * .1) + ' L' + r2(s * 1.14) + ',' + r2(s * .26) + ' L' + r2(s * .58) + ',' + r2(s * .44) + ' Z', fill: '#FFB02E' }, g), lw * .9);
+    ink(S('ellipse', { cx: s * .58, cy: s * .6, rx: s * .16, ry: s * .22, fill: '#E8434F' }, g), lw * .8);
+    var parts = sleepy(eyes(g, s, { spread: .3, y: -.16, r: .17, look: o.look }), c.mood);
+    if (o.blush !== false) { blush(g, s, .56, .3); }
+    return parts;
+  };
+
+  /* --- penguin: upright, white front, stubby flippers, orange feet.
+         Added rather than reaching for a dark duck, which is the same
+         mistake as the frog. --- */
+  SPECIES.penguin = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.34, s * 1.0, s * .2); }
+    ink(S('path', { d: 'M' + r2(-s * .5) + ',' + r2(s * 2.1) + ' q' + r2(-s * .5) + ',' + r2(s * .1) + ' ' + r2(-s * .16) + ',' + r2(s * .3) + ' l' + r2(s * .8) + ',0 Z', fill: '#FF9E2C' }, g), lw * .7);
+    ink(S('path', { d: 'M' + r2(s * .5) + ',' + r2(s * 2.1) + ' q' + r2(s * .5) + ',' + r2(s * .1) + ' ' + r2(s * .16) + ',' + r2(s * .3) + ' l' + r2(-s * .8) + ',0 Z', fill: '#FF9E2C' }, g), lw * .7);
+    /* upright body, taller than wide */
+    ink(S('ellipse', { cx: 0, cy: s * 1.14, rx: s * .88, ry: s * 1.04, fill: c.paint }, g), lw);
+    ink(S('ellipse', { cx: 0, cy: s * 1.26, rx: s * .56, ry: s * .82, fill: '#FFF6E6' }, g), lw * .8);
+    /* flippers, held slightly out from the body */
+    ink(S('path', { d: 'M' + r2(-s * .82) + ',' + r2(s * .68) + ' q' + r2(-s * .46) + ',' + r2(s * .5) + ' ' + r2(-s * .18) + ',' + r2(s * 1.06) + ' q' + r2(s * .3) + ',' + r2(-s * .16) + ' ' + r2(s * .42) + ',' + r2(-s * .72) + ' Z', fill: c.dark }, g), lw * .8);
+    ink(S('path', { d: 'M' + r2(s * .82) + ',' + r2(s * .68) + ' q' + r2(s * .46) + ',' + r2(s * .5) + ' ' + r2(s * .18) + ',' + r2(s * 1.06) + ' q' + r2(-s * .3) + ',' + r2(-s * .16) + ' ' + r2(-s * .42) + ',' + r2(-s * .72) + ' Z', fill: c.dark }, g), lw * .8);
+    /* head with a white face patch */
+    ink(S('circle', { cx: 0, cy: 0, r: s * .82, fill: c.paint }, g), lw);
+    S('path', { d: 'M0,' + r2(-s * .34) + ' q' + r2(s * .6) + ',' + r2(s * .1) + ' ' + r2(s * .48) + ',' + r2(s * .66) + ' q' + r2(-s * .48) + ',' + r2(s * .3) + ' ' + r2(-s * .96) + ',0 q' + r2(-s * .12) + ',' + r2(-s * .56) + ' ' + r2(s * .48) + ',' + r2(-s * .66) + ' Z', fill: '#FFF6E6' }, g);
+    var parts = sleepy(eyes(g, s, { spread: .3, y: -.06, r: .16, look: o.look }), c.mood);
+    ink(S('path', { d: 'M' + r2(-s * .2) + ',' + r2(s * .34) + ' L' + r2(s * .2) + ',' + r2(s * .34) + ' L0,' + r2(s * .68) + ' Z', fill: '#FF9E2C' }, g), lw * .6);
+    if (o.blush !== false) { blush(g, s, .6, .3); }
+    return parts;
+  };
+
   /* --- owl --- */
   SPECIES.owl = function (c) {
     var s = c.s, g = c.g, lw = c.lw, o = c.o;

@@ -5,7 +5,7 @@ Nothing in it says "maths".
 
 | game | what it is | what it works on |
 |---|---|---|
-| **Tricks** | 56 puzzles, each with a catch. The main event | lateral thinking |
+| **Tricks** | 100 puzzles, each with a catch. The main event | lateral thinking |
 | **Pairs** | memory matching, three board sizes | recognition memory |
 | **Odd One** | find the different critter before the timer ends | visual discrimination |
 | **Echo** | watch colours light up, then repeat the sequence | sequential recall |
@@ -41,7 +41,7 @@ it clicks.
 
 **25–32** step up to tracing, mirroring, rotation and transitive reasoning.
 
-**33–56** are the hard batch, and they are genuinely hard. **Nothing is locked** —
+**33–61** are the hard batch, and they are genuinely hard. **Nothing is locked** —
 one puzzle she cannot crack used to hide every puzzle after it, and the hard batch
 is not in strict difficulty order anyway (the water jugs at 37 are harder than the
 gears at 40 or the analogy at 44):
@@ -58,6 +58,10 @@ gears at 40 or the analogy at 44):
 - **Deduction** — who owns the cat, finding the heavy ball in two weighings, and
   transitive weighing where the two items being compared are never weighed against
   each other
+
+**62–73** (v10) and **74–100** (v11) carry on past the hard batch without getting
+harder in a straight line — they add *kinds* of thinking rather than degrees of
+difficulty. See the v10 and v11 notes near the bottom for what each one is.
 
 The learning only surfaces *after* she's solved something, as the punchline on the
 win screen — "Seed, sprout, flower. Everything that grows takes its turn in order."
@@ -121,7 +125,9 @@ phone. Fast to reload, but no offline on plain HTTP.
 | `game.js` | engine — touch, drag, multi-touch, sound, screens, routing |
 | `puzzles.js` | Tricks puzzles 1–24 |
 | `puzzles2.js` | Tricks puzzles 25–32, harder |
-| `puzzles3.js` | Tricks puzzles 33–56, the expert batch |
+| `puzzles3.js` | Tricks puzzles 33–61, the expert batch |
+| `puzzles4.js` | Tricks puzzles 62–73, added in v10 |
+| `puzzles5.js` | Tricks puzzles 74–100, added in v11 |
 | `pairs.js` `oddone.js` `echo.js` `spot.js` `slide.js` | arcade games |
 | `snapshot.js` `trail.js` `wakeup.js` `sortit.js` `maze.js` | mind games |
 | `untangle.js` `whichway.js` `fillit.js` | spatial + attention games |
@@ -130,10 +136,15 @@ phone. Fast to reload, but no offline on plain HTTP.
 
 ## Drawing things
 
-`animal()` gives real silhouettes — cat, mouse, elephant, dog, bear, bunny, duck,
-owl, fish. Each has its own body shape, ears, tail and stance, so a cat cannot be
-mistaken for a mouse. The origin is the **centre of the head**, and the body hangs
-below it; feet land about 2.2–2.7 × size below the origin.
+`animal()` gives real silhouettes — cat, mouse, elephant, dog, fox, bear, bunny,
+duck, **hen**, **frog**, **penguin**, owl, fish. Each has its own body shape, ears, tail and
+stance, so a cat cannot be mistaken for a mouse. The origin is the **centre of the
+head**, and the body hangs below it; feet land about 2.2–2.7 × size below the origin.
+
+The frog has its eyes on **top** of a wide flat head, a mouth right across the face
+and webbed feet, so it cannot be mistaken for a bird; the hen has a comb, a wattle
+and tail feathers, so it cannot be mistaken for a duck. Both exist because puzzles
+were shipping with the wrong animal — see v10 below.
 
 ```js
 animal(st, { kind: 'elephant', x: 296, y: 208, size: 13, fill: '#A9A6C4' });
@@ -284,13 +295,174 @@ boards by exact-cover search.
 puzzles and 14 games), no JS errors anywhere, and animation teardown confirmed firing
 140 times across a full tour.
 
-**Not re-verified since v7:** layout at 375×667 and 375×553. v7 added a full-screen
-play-log panel; it is absolutely positioned with `overflow-y:auto` so it scrolls
-rather than overflows, but that is reasoning, not a measurement. The tightest case in
-the app is the arcade screen with a difficulty picker in the footer (Pairs, Slide),
-which computes to roughly 541px of 553 — about 12px of headroom, and `.col` has no
-overflow, so it would spill rather than scroll. Measure before adding anything to
-that footer.
+**Layout, measured in v10** — the play screen column was computed from the CSS for
+all 73 puzzles at both sizes, word-wrapping each `ask` banner to get its real height:
+
+| | available | worst case | headroom |
+|---|---|---|---|
+| 375×667 fullscreen | 639px | #70, 3-line banner + chips = 498px | 141px |
+| 375×553 with toolbars | 525px | #70, 3-line banner + chips = 478px | 47px |
+
+The binding constraint is the **length of the `ask` string**, not the artwork: the
+stage box is a fixed 83.33% of width and the chips tray is fixed, so a fourth wrapped
+line is the only thing that moves the total. #70's question was cut from 127 to 109
+characters during v10 for exactly this reason, which bought a whole line back.
+
+Still unmeasured: the arcade screen with a difficulty picker in the footer (Pairs,
+Slide). v7 reasoned it at roughly 541px of 553. Measure before adding to that footer.
+
+### v11 — to one hundred
+
+Twenty-seven added as `puzzles5.js`, 74–100, in four groups.
+
+| # | puzzles | the idea |
+|---|---|---|
+| 74–79 | postman, dominoes, pancakes, ice, scales, seeds | planning several moves ahead |
+| 80–85 | pulley, lever, bike tracks, falling stones, candles, wind | how the world actually behaves |
+| 86–92 | mislabelled boxes, higher-or-lower, colour code, lily pond, handshakes, days, the door rule | deduction with nothing stated |
+| 93–100 | string, overlays, occlusion, folding, cuts, shadows, opposite faces, water | seeing from an angle nobody drew |
+
+Six of them use an interaction the app did not have: tapping **roads** rather than
+places (74), prefix-flipping a stack (76), picking a **direction** and sliding until
+something stops you (77), putting weights on **either** pan (78), pouring an amount
+the board decides rather than you (79), and a guess-with-feedback loop (87).
+
+**Bugs found in v11:**
+
+- **The colour code was not solvable.** Its two scored guesses both came back "1
+  right", and **six** of the 27 possible codes fit those scores — she could only have
+  guessed. Searching every answer against every pair of guesses, exactly six setups
+  pin a single code without a guess scoring 3, and in all six **both guesses score
+  zero**. That is what ships now, and it is a better puzzle: two tries, nothing right,
+  and between them everything else is ruled out. This is the third time this codebase
+  has shipped a draft puzzle that looked fine and could not be solved
+- **The ice puzzle solved itself in two slides.** The intended route was three, but a
+  decoy rock at (4,3) accidentally acted as a brake for a straight down-then-left run.
+  Moved to (3,3); BFS now confirms the minimum is three and that it matches the
+  written hint
+- **The seed feeders solved themselves in two pours** from the first start tried.
+  Every three-way split of twelve was searched; `[10,1,1]` is the only family needing
+  four, so that is the one shipped
+- **The penguin was a dark duck.** Caught by the v10 species audit the moment the word
+  "penguin" was added to it — which is the point of having it. `SPECIES.penguin` now
+  exists (upright, white front, flippers, orange feet)
+- **The ice grid's hit areas sat underneath the direction pad**, so taps meant for
+  the pad could land on a square instead. Grid shrunk, pad moved clear
+
+**Testing.** All four earlier suites re-run over 100 puzzles, plus 95 new assertions:
+
+- geometry, text-under-art and panel-edge sweep: **0 issues across 100**
+- species vs question text: **0 mismatches across 100**, and the audit was
+  *negative-controlled* — the penguin was temporarily swapped back to a duck to
+  confirm the check actually fires rather than passing vacuously
+- single-tap sweep: **0 puzzles winnable by tapping anything**
+- solvability proved by search, not asserted: Euler path for the postman (and that
+  starting from a four-road junction is provably impossible), prefix-reversal BFS for
+  the pancakes, slide-BFS for the ice, exhaustive search for the seeds, the full
+  27-code search for the colour lock
+- facts behind the puzzles computed rather than trusted: the three strings **measured**
+  by flattening their Béziers (224 / 386 / 294 units — the longest is not the widest),
+  the two overlay sheets actually intersected, the die's face adjacencies enumerated to
+  confirm the moon is the only face never seen beside the star, the handshake picture
+  counted (6 lines), Tuesday + 10 computed, the candles' rendered heights compared
+- layout re-measured at 375×667 and 375×553; the tightest case is still #70 with 47px
+  of headroom, and nothing new comes near it
+
+**Honest gaps, unchanged and important.** Still nothing rendered — Chromium cannot be
+downloaded in the sandbox, so every one of these 100 has been *measured* and none has
+been *looked at*. The riskiest of the new ones on a real screen: the isometric die in
+#99 (three small faces with five hand-drawn glyphs), the bike tracks in #82 (the whole
+puzzle rests on the splatter reading as "flicked backwards"), and #93, where the three
+strings must look plausibly similar in length or the puzzle is trivial. Look at these
+on the phone before trusting them.
+
+### v10 — twelve new puzzles, and the wrong animals
+
+Twelve added as `puzzles4.js`, 62–73. The v9 rule held: **new pictures, not easier
+versions**. No two share artwork or a mechanic, and five use an interaction that did
+not exist in the app before.
+
+| # | puzzle | interaction | what it builds |
+|---|---|---|---|
+| 62 | shunting yard | drag trains between four slots | parking somewhere useless so another can pass |
+| 63 | eat every leaf | tap a neighbouring leaf | a Hamiltonian path, with real dead ends |
+| 64 | program the bee | **queue five arrows, then run them** | writing the whole plan down before moving |
+| 65 | the tilted jars | tap the jar | water stays flat however you hold it |
+| 66 | the low sun | drag the shadow to a zone | two rules at once: side, and length |
+| 67 | off the table | tap where it lands | forward motion does not stop when the table does |
+| 68 | the two bins | drag into a bin | a hidden rule behind colour and shape as decoys |
+| 69 | the machine | chips | infer a rule from three examples, apply to a fourth |
+| 70 | the sock drawer | chips | pigeonhole — count the colours, not the socks |
+| 71 | from above | tap the plan view | flatten a solid into a view nobody showed you |
+| 72 | make the square | **tap two pieces** | the right count is not the right shape |
+| 73 | turned around | tap the shape | a rotation, with its mirror sitting next to it |
+
+64 is the load-bearing one: the plan is committed *before* anything moves, so she
+cannot feel her way to the answer one tap at a time.
+
+**Bugs found in v10.** Every one was found by measurement, not by looking:
+
+- **Two puzzles drew the wrong animal.** The frog swap drew four **ducks** and the
+  stepping-stones frog was a green **bunny**; the river crossing said "hen" and drew a
+  duck. A child who reads *frog* and sees a beak concludes she misread. Added
+  `SPECIES.frog` and `SPECIES.hen`. Found by cross-checking every animal word in
+  `ask`/`hint`/`tell`/`why` against the `__kind` actually rendered — now 0 mismatches
+  across 73 puzzles, and it is a standing test
+- **"Who owns the cat?" drew no cat, no dog and no fish** — three identical blobs and
+  three names, with the whole story invisible. The three pets are now on screen
+- **Six puzzles had text underneath artwork or clipped by the panel edge.** The
+  sleeping owl's "z z" sat under the sun (one 100% covered, one 41%); the lift's
+  floor-1 number was 71% under the "Up 3" button; the mirror puzzle's "mirror" caption
+  was 60% under an answer card *and* its cards ran 3.5 units off the stage; the clock's
+  three "the 6 / the 9 / the 3" labels, the block-stack caption and the road caption
+  all sat within 9 units of a panel edge that has a 20px corner radius and a 3px inset
+  border drawn over it. Found by computing a real bounding box for every element,
+  walking the tree in paint order, and flagging any text a later opaque shape covered
+- **`tap()` swallowed the second of two quick presses on the same button.** It held a
+  flat 280ms lockout per element to stop iOS firing `touchend` and a synthetic
+  `mouseup` for one physical tap. That is fine when every tap is a different target —
+  which was true of all 61 old puzzles, which is why it was never noticed — but the
+  bee puzzle needs the same arrow pressed twice in a row, and the second press
+  vanished. It now suppresses the *ghost mouse event* specifically (a `mouseup` within
+  700ms of a `touchend`) and keeps only a 60ms same-type guard. All 73 puzzles re-run
+  after the change
+
+**Testing.** Four suites, all driven programmatically against a jsdom build of the
+real `index.html`. Chromium cannot be downloaded in the build sandbox, so geometry is
+computed analytically — every element's transform is accumulated into a matrix and
+every primitive gets an exact axis-aligned box, which is stricter than `getBBox` for
+this purpose because it also gives paint order.
+
+- **Geometry + text** — 73 puzzles swept for `NaN`/`undefined`/`Infinity`, art off the
+  360×300 stage, text covered by later opaque artwork, and text inside the panel's
+  clipped margin. 0 issues
+- **Win path and wrong path** — every tappable target in every puzzle tapped in
+  isolation, on a fresh build each time. Each puzzle has at least one winning target
+  **and** at least one that is rejected: nothing in the app is winnable by tapping
+  anything
+- **Solvability proved in code, not asserted** — the shunting yard by BFS over its own
+  move rules (6 moves, and it proves the siding is required); every leaf eaten by
+  exhaustive search, plus a proof that a plausible wrong route really does strand the
+  caterpillar; the bee's route proved **unique** across all 32 orderings of five
+  arrows; the square proved to have exactly one tiling pair, and the bar-of-three plus
+  the single square proved to sum to four cells and still not fit; #73's three options
+  proved to be a rotation, a reflection-that-is-not-a-rotation, and neither
+- **Measured on screen, never by score** — the frog, the caterpillar, the bee, the lift
+  car and the two trains all had their rendered `transform` read at every step. A maze
+  bug once passed a score-based test for a whole version while the screen was frozen,
+  so a move only counts here if the sprite's transform changed. The tilted jars are
+  checked by transforming the water polygon into world coordinates and measuring the
+  surface angle: 0.0° for the right jar, 24.0° and 156.0° for the two wrong ones
+
+18 assertions on the repaired puzzles and 48 on the new ones, all passing.
+
+**Honest gaps.** Nothing was rendered to a real screen — no Chromium in the sandbox,
+so nothing here has been *looked at*, only measured. Three things that only a render
+would catch: whether the new frog and hen actually read as a frog and a hen at
+size 13, whether the isometric block tower in #71 reads as a tower, and whether the
+bee's five-slot plan strip is legible on a 4.7-inch screen. The v9 notes record that a
+coin one pixel off the stage edge and kernels poking through a corn cob were both
+invisible to every automated check. Look at 62–73 on the phone before trusting them.
 
 ### The 36-40 difficulty ramp (v9)
 

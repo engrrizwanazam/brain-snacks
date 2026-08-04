@@ -117,14 +117,24 @@ var BS = (function () {
   }
 
   /* ---------- interactions ---------- */
+  /* iOS fires a synthetic mouseup after touchend for the same physical tap, up
+     to about 300ms later, so both listeners would run the handler twice. The
+     old guard was a flat 280ms lockout on the element, which killed the second
+     tap of a genuine double press: on the bee puzzle you press the same arrow
+     twice in a row and only one arrow appeared. Suppress the *synthetic mouse
+     event* specifically instead, and keep only a very short guard against a
+     true double-fire of the same event type. */
   function tap(el, fn) {
     el.style.cursor = 'pointer';
-    var fired = false;
+    var lastTouch = 0, lastFire = 0;
     function go(e) {
       if (locked) { return; }
+      var now = Date.now();
+      if (e.type === 'touchend') { lastTouch = now; }
+      else if (now - lastTouch < 700) { return; }   /* the ghost mouse event */
       e.preventDefault(); e.stopPropagation();
-      if (fired) { return; }
-      fired = true; setTimeout(function () { fired = false; }, 280);
+      if (now - lastFire < 60) { return; }
+      lastFire = now;
       fn(el);
     }
     el.addEventListener('touchend', go, false);

@@ -177,7 +177,8 @@ var PUZZLES_EXPERT = (function () {
   /* the cast of the river puzzles, shared so the ramp looks like the real one */
   var RIVER_ROWS = [
     { key: 'fox', y: 66, make: function (st) { return animal(st, { kind: 'fox', x: 46, y: 66, size: 14, fill: '#E8722F', bob: false }); } },
-    { key: 'hen', y: 150, make: function (st) { return animal(st, { kind: 'duck', x: 46, y: 150, size: 15, fill: '#FFF0C0', bob: false }); } },
+    /* said "hen", drew a duck */
+    { key: 'hen', y: 150, make: function (st) { return animal(st, { kind: 'hen', x: 46, y: 150, size: 14, fill: '#F5E3B0', bob: false }); } },
     { key: 'corn', y: 232, make: function (st) { return cob(st, 46, 232); } }
   ];
   function RIVER_UNSAFE(away) {
@@ -462,7 +463,7 @@ var PUZZLES_EXPERT = (function () {
           var step = k - at;
           if (step !== 1 && step !== 2) { BS.nope(g); return; }
           busy = true; at = k;
-          glide(frog, px(k), py(k) - 20, 240);
+          glide(frog, px(k), py(k) - 18, 240);
           BS.SFX.grab();
           setTimeout(function () {
             busy = false;
@@ -471,7 +472,8 @@ var PUZZLES_EXPERT = (function () {
         });
       })(HAS[i]);
     }
-    var frog = animal(st, { kind: 'bunny', x: px(0), y: py(0) - 20, size: 13, fill: '#3FBF7F', bob: false });
+    /* was drawn as a green bunny while the question said frog */
+    var frog = animal(st, { kind: 'frog', x: px(0), y: py(0) - 18, size: 12, fill: '#3FBF7F', bob: false });
     A.lift(st);
   }
 },
@@ -553,14 +555,18 @@ var PUZZLES_EXPERT = (function () {
   why: 'You went downwards twice on purpose to get higher. Going the wrong way was the only way.',
   build: function (st) {
     scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 280, vignette: false });
-    var FY = [0, 246, 206, 166, 126, 86, 46], at = 1, busy = false;
+    /* Floor 1 used to sit at y=246, and the "Up 3" button rect runs from 252
+       to 288 across x=36..156 -- so the floor-1 number was 71% buried under
+       the button. The ladder is compressed to 36 units per floor, which
+       leaves the bottom number 10 units clear of the buttons. */
+    var FY = [0, 226, 190, 154, 118, 82, 46], at = 1, busy = false;
     var i;
     for (i = 1; i <= 6; i++) {
       ink(S('line', { x1: 96, y1: FY[i] + 20, x2: 264, y2: FY[i] + 20 }, st), 3)
         .setAttribute('stroke', '#C08D57');
       txt(String(i), { x: 76, y: FY[i] + 12, 'font-size': 16, fill: '#241534', opacity: '.65' }, st);
     }
-    ink(S('rect', { x: 264, y: 30, width: 4, height: 236, fill: '#C08D57' }, st), 0);
+    ink(S('rect', { x: 264, y: 22, width: 4, height: 232, fill: '#C08D57' }, st), 0);
     var car = G(st, 180, FY[1]);
     ink(S('rect', { x: -34, y: -22, width: 68, height: 42, rx: 6, fill: '#6EC6E8' }, car), 4);
     ink(S('line', { x1: 0, y1: -22, x2: 0, y2: 20 }, car), 3);
@@ -669,7 +675,8 @@ var PUZZLES_EXPERT = (function () {
     cube(150, 172, T, L, R);
     cube(210, 172, T, L, R);
     cube(180, 128, T, L, R);
-    txt('one block is hidden behind', { x: 180, y: 288, 'font-size': 12, fill: '#241534', opacity: '.5' }, st);
+    /* was y=288: inside the stage box's rounded corner and inset border */
+    txt('one block is hidden behind', { x: 180, y: 274, 'font-size': 12, fill: '#241534', opacity: '.5' }, st);
     BS.chips(['6', '7', '8', '9'], 1);
   }
 },
@@ -861,18 +868,33 @@ var PUZZLES_EXPERT = (function () {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
     var lines = ['Ali has the dog.', 'Sara does not have the cat.', 'One of them has the fish.'];
     for (var i = 0; i < 3; i++) {
-      var g = G(st, 180, 40 + i * 44);
-      ink(S('rect', { x: -158, y: -18, width: 316, height: 36, rx: 10, fill: '#FFF6E6' }, g), 3);
+      var g = G(st, 180, 32 + i * 42);
+      ink(S('rect', { x: -158, y: -17, width: 316, height: 34, rx: 10, fill: '#FFF6E6' }, g), 3);
       txt(lines[i], { x: 0, y: 6, 'font-size': 16, fill: '#241534' }, g);
+    }
+    /* The clues talk about a cat, a dog and a fish and the puzzle drew none of
+       them -- three identical blobs and three names. Show the three pets, so
+       the child can see what is being reasoned about. They are not tappable;
+       the answer is still a person. */
+    var pets = [
+      { kind: 'cat', fill: '#FFB03A' },
+      { kind: 'dog', fill: '#C9A46B' },
+      { kind: 'fish', fill: '#6EC6E8' }
+    ];
+    for (i = 0; i < 3; i++) {
+      var pg = G(st, 92 + i * 88, 172);
+      ink(S('rect', { x: -32, y: -28, width: 64, height: 54, rx: 10, fill: '#FFF6E6', opacity: '.6' }, pg), 2.4);
+      animal(pg, { kind: pets[i].kind, x: 0, y: pets[i].kind === 'fish' ? 0 : -9,
+        size: pets[i].kind === 'fish' ? 14 : 10, fill: pets[i].fill, bob: false, shadow: false });
     }
     var who = ['Ali', 'Sara', 'Bilal'];
     var cols = ['#6EC6E8', '#FF8FA6', '#3FBF7F'];
     for (i = 0; i < 3; i++) {
       (function (i) {
-        var g = G(st, 72 + i * 108, 214);
-        pad(g, 96, 132);
-        critter(g, { x: 0, y: -14, size: 26, fill: cols[i], ears: 'round', bob: false, shadow: false });
-        txt(who[i], { x: 0, y: 46, 'font-size': 17, fill: '#241534' }, g);
+        var g = G(st, 72 + i * 108, 240);
+        pad(g, 96, 84);
+        critter(g, { x: 0, y: -22, size: 16, fill: cols[i], ears: 'round', bob: false, shadow: false });
+        txt(who[i], { x: 0, y: 30, 'font-size': 17, fill: '#241534' }, g);
         tap(g, function () { if (i === 2) { BS.win(); } else { BS.nope(g); } });
       })(i);
     }
@@ -958,7 +980,8 @@ var PUZZLES_EXPERT = (function () {
     tap(m, function () { BS.win(); });
     tap(l, function () { BS.nope(l); });
     tap(s, function () { BS.nope(s); });
-    txt('tap the road you would take', { x: 180, y: 290, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
+    /* was y=290: clipped along the bottom edge of the panel */
+    txt('tap the road you would take', { x: 180, y: 274, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
   }
 },
 
@@ -1200,13 +1223,17 @@ var PUZZLES_EXPERT = (function () {
     ink(S('line', { x1: 0, y1: 0, x2: 0, y2: -54 }, g), 6).setAttribute('stroke', '#F0466F');
     ink(S('line', { x1: 0, y1: 0, x2: 34, y2: 0 }, g), 6);
     ink(S('circle', { cx: 0, cy: 0, r: 7, fill: '#241534' }, g), 2);
-    options(st, 242, function (gg, i) {
+    /* The "the 6 / the 9 / the 3" captions used to hang below each option at
+       y=288, which is inside the stage box's rounded corner and its 3px inset
+       border, so they rendered clipped along the bottom edge. They sit inside
+       the card now, above the hand, and the row moved up 8 units. */
+    options(st, 234, function (gg, i) {
       var n = [6, 9, 3][i];
-      ink(S('circle', { cx: 0, cy: 0, r: 30, fill: '#FFF6E6' }, gg), 3);
+      ink(S('circle', { cx: 0, cy: 7, r: 25, fill: '#FFF6E6' }, gg), 3);
       var ang = (n / 12) * Math.PI * 2 - Math.PI / 2;
-      ink(S('line', { x1: 0, y1: 0, x2: Math.cos(ang) * 22, y2: Math.sin(ang) * 22 }, gg), 5)
+      ink(S('line', { x1: 0, y1: 7, x2: Math.cos(ang) * 19, y2: 7 + Math.sin(ang) * 19 }, gg), 5)
         .setAttribute('stroke', '#F0466F');
-      txt('the ' + n, { x: 0, y: 46, 'font-size': 12, fill: '#241534', opacity: '.6' }, gg);
+      txt('the ' + n, { x: 0, y: -26, 'font-size': 12, fill: '#241534', opacity: '.6' }, gg);
     }, 1);
   }
 },
@@ -1219,14 +1246,18 @@ var PUZZLES_EXPERT = (function () {
   why: 'Mirrors only flip one way. The upside-down one was a trap.',
   build: function (st) {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
-    animal(st, { kind: 'cat', x: 76, y: 78, size: 22, fill: '#FFB03A', bob: false });
-    ink(S('line', { x1: 148, y1: 24, x2: 148, y2: 172 }, st), 5).setAttribute('stroke-dasharray', '9 8');
-    txt('mirror', { x: 148, y: 190, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
+    animal(st, { kind: 'cat', x: 76, y: 74, size: 21, fill: '#FFB03A', bob: false });
+    /* The "mirror" caption used to sit at y=190, which is underneath the top
+       edge of the answer cards -- 60% of it was covered by card artwork drawn
+       afterwards. It now sits beside the mirror line, clear of the row, and
+       the cards moved up so they no longer run 3.5 units off the stage. */
+    ink(S('line', { x1: 148, y1: 20, x2: 148, y2: 156 }, st), 5).setAttribute('stroke-dasharray', '9 8');
+    txt('mirror', { x: 190, y: 30, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
     for (var i = 0; i < 3; i++) {
       (function (i) {
-        var g = G(st, 72 + i * 108, 244);
-        pad(g, 96, 118);
-        ink(S('rect', { x: -46, y: -58, width: 92, height: 116, rx: 10, fill: '#FFF6E6' }, g), 3);
+        var g = G(st, 72 + i * 108, 232);
+        pad(g, 96, 110);
+        ink(S('rect', { x: -46, y: -54, width: 92, height: 108, rx: 10, fill: '#FFF6E6' }, g), 3);
         var inner = S('g', {}, g);
         if (i === 0) { inner.setAttribute('transform', 'translate(0,-6)'); }
         else if (i === 1) { inner.setAttribute('transform', 'translate(0,-6) scale(-1,1)'); }
@@ -1257,9 +1288,10 @@ var PUZZLES_EXPERT = (function () {
       ink(S('ellipse', { cx: 0, cy: 0, rx: 28, ry: 18, fill: '#5FD08A' }, pl), 3.5);
       ink(S('path', { d: 'M0,0 L-9,-15', fill: 'none' }, pl), 2.5);
     }
+    /* these were ducks. The question says frogs, so they are frogs now. */
     function mk(kind, at2) {
-      var g = animal(st, { kind: 'duck', x: xs[at2], y: 148,
-        fill: kind === 'g' ? '#7FD094' : '#6EC6E8', size: 14, bob: false });
+      var g = animal(st, { kind: 'frog', x: xs[at2], y: 152,
+        fill: kind === 'g' ? '#5FC47F' : '#6EA8E8', size: 13, bob: false });
       return g;
     }
     frogs.g0 = mk('g', 0); frogs.g1 = mk('g', 1);
@@ -1285,7 +1317,7 @@ var PUZZLES_EXPERT = (function () {
       if (d === dir * 2 && slots[i + dir] === null) { BS.nope(owner[i]); return; }
       slots[empty] = slots[i]; slots[i] = null;
       owner[empty] = owner[i]; owner[i] = null;
-      glide(owner[empty], xs[empty], 148, 230);
+      glide(owner[empty], xs[empty], 152, 230);
       BS.SFX.drop();
       setTimeout(function () {
         if (slots[0] === 'b' && slots[1] === 'b' && slots[3] === 'g' && slots[4] === 'g') { BS.win(); }
