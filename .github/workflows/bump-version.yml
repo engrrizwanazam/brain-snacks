@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths-ignore:
       - '.github/**'
+permissions:
+  contents: write
 jobs:
   bump:
     runs-on: ubuntu-latest
