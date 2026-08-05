@@ -1,6 +1,6 @@
 # Brain Snacks
 
-Fourteen games for a 6–8 year old, built to run on an iPhone 6 (iOS 12.5 / Safari 12).
+Twenty games for a 6–8 year old, built to run on an iPhone 6 (iOS 12.5 / Safari 12).
 Nothing in it says "maths".
 
 | game | what it is | what it works on |
@@ -19,8 +19,14 @@ Nothing in it says "maths".
 | **Untangle** | drag the dots until no strings cross | spatial reasoning, persistence |
 | **Which Way** | tap the way the *middle* arrow points | attention under interference |
 | **Fill It** | pack the pieces to cover every square | spatial planning |
+| **Cups** | the ball goes under a cup, then the cups swap over | sustained visual attention |
+| **Follow** | some critters wave, then everyone looks the same and wanders | multiple object tracking |
+| **How Many** | berries appear and vanish before you can count them | subitising, grouping |
+| **Which Pile** | tap the pile with *more* stones, not the bigger-looking one | number sense vs. area |
+| **Say the Colour** | the word says one thing, the ink says another | inhibition (Stroop) |
+| **Opposite Day** | a rabbit pops up, tap the *other* burrow | response reversal |
 
-Thirteen of the fourteen are procedural, so they never run out — which matters far
+Nineteen of the twenty are procedural, so they never run out — which matters far
 more than a fixed level count on a device that spends most of its life offline.
 
 The last four are the ones worth knowing about. **Snapshot** is a Corsi-block task,
@@ -131,6 +137,9 @@ phone. Fast to reload, but no offline on plain HTTP.
 | `pairs.js` `oddone.js` `echo.js` `spot.js` `slide.js` | arcade games |
 | `snapshot.js` `trail.js` `wakeup.js` `sortit.js` `maze.js` | mind games |
 | `untangle.js` `whichway.js` `fillit.js` | spatial + attention games |
+| `cups.js` `follow.js` | tracking games (v12) |
+| `howmany.js` `whichpile.js` | number-sense games (v12) |
+| `colour.js` `opposite.js` | conflict games (v12) |
 | `sw.js` | offline cache |
 | `make_icons.py` | regenerates the app icon from `art.js` |
 
@@ -310,6 +319,70 @@ characters during v10 for exactly this reason, which bought a whole line back.
 
 Still unmeasured: the arcade screen with a difficulty picker in the footer (Pairs,
 Slide). v7 reasoned it at roughly 541px of 553. Measure before adding to that footer.
+
+### v12 — six new games
+
+The fourteen games covered memory, discrimination, switching, go/no-go and
+flanker interference. These six fill the gaps that were left.
+
+| game | what it trains | why it is not one of the others |
+|---|---|---|
+| **Cups** | sustained visual attention | the target *hides*; she has to hold a position, not a picture |
+| **Follow** | multiple object tracking | the targets stay in plain sight and there are simply too many |
+| **How Many** | subitising and grouping | counting one at a time is deliberately impossible |
+| **Which Pile** | number sense against area | a Stroop conflict with **no reading in it at all** |
+| **Say the Colour** | inhibition | the distraction is *inside* the target, not beside it like Which Way |
+| **Opposite Day** | response reversal | Which Way filters noise; this one has to be turned around |
+
+All six adapt: they speed up and tighten after correct answers and ease back two
+notches after a mistake. No difficulty menus, so no new footer pickers.
+
+**Design notes.** Which Pile gives the *smaller* pile the fatter stones about half
+the time, so "more stuff" and "more things" pull against each other — that is a
+numerical Stroop, and it works for a child who cannot read yet. Say the Colour uses
+plain colour swatches for its buttons rather than colour words, because a footer full
+of words would have been a second Stroop layered on the first. Opposite Day
+occasionally puts a rabbit out of *both* burrows, where the right answer is to sit
+still and let the timer run out — which is scored as a win, not a miss.
+
+**Bugs found in v12:**
+
+- **Cups originally listened on the arena itself**, which would have stacked one more
+  click handler on every single game. Replaced with per-slot hit layers rebuilt with
+  the board, which is the convention the rest of the app already uses
+- **The arcade footer was 12px from spilling at 375×553** — the case the README had
+  flagged as unmeasured since v7. Measured: 513 of 525. This is not new, but two of
+  the six new games use a footer, so it was going to bite. The `max-height:600px`
+  media query now trims the picker, taking every footer game from ~12px of headroom
+  to ~23px
+
+**Testing.** Five suites over all twenty games:
+
+- every game starts from its home card, draws into the arena, and has no
+  `NaN`/`undefined`/`Infinity` anywhere: **19/19 arcade games clean**
+- **nothing repaints over a later screen**: each game is started, left, and a sentinel
+  parked in the arena for 2.6 seconds — longer than any round timer in the app. This
+  is the v7 bug that hit six games at once, so it is checked for all of them. All clean
+- each new game **played properly**, win path and wrong path: the ball revealed under
+  the tapped cup agrees with the score across four rounds (two right, two wrong); the
+  pile with more dots counted off the screen; the ink colour scored and the *word*
+  colour punished on a genuinely conflicting round; the burrow without the rabbit
+  scored and the one with it punished; the true berry count present among the chips
+  and scoring
+- **Follow measured, not assumed** — an earlier version of that test asserted "they are
+  moving" as a bare `true`, which is worth nothing. Positions are now sampled 700ms
+  apart (5/5 moved), and the glowing critters are identified by resolving each body's
+  gradient back to its middle stop-colour, because `critter()` paints through
+  `bodyFill()` and the raw hex never appears as an attribute
+- **adaptation measured**: Which Pile's ratio between the piles narrows from 1.95 in
+  the first half of a run to 1.33 in the second, and 7 of 14 rounds carried the
+  size-versus-count conflict
+
+**Honest gaps.** Still nothing rendered. The riskiest of the six on a real screen:
+Cups (the swap animation has to be followable — too fast and it is luck, too slow and
+it is boring, and only a person can judge that), Follow at nine critters on a 4.7-inch
+screen, and Say the Colour, which assumes she can read four colour words. If she
+cannot yet, that one will not work and should be dropped rather than explained.
 
 ### v11 — to one hundred
 

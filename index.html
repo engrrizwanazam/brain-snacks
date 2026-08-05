@@ -85,6 +85,12 @@ body {
 .c-untangle { background:#7FD9C4; box-shadow:0 5px 0 #55A793; }
 .c-which  { background:#FFB0C8; box-shadow:0 5px 0 #C97E96; }
 .c-fill   { background:#C9B4F5; box-shadow:0 5px 0 #9585C0; }
+.c-cups   { background:#F58BA0; box-shadow:0 5px 0 #C05F73; }
+.c-follow { background:#7FC4E8; box-shadow:0 5px 0 #5691B4; }
+.c-howmany{ background:#8FD98F; box-shadow:0 5px 0 #61A661; }
+.c-pile   { background:#F5C86B; box-shadow:0 5px 0 #C09642; }
+.c-colour { background:#D9A0F0; box-shadow:0 5px 0 #A472BC; }
+.c-opp    { background:#9FD8C4; box-shadow:0 5px 0 #6EA592; }
 .wrapfull { grid-column:1 / span 2; }
 .rulebar { margin-top:9px; padding:10px; border-radius:13px; background:var(--cream);
   color:var(--ink); font-size:14px; font-weight:800; letter-spacing:.06em; text-align:center;
@@ -217,6 +223,12 @@ table.st tr.ok td:first-child { color:var(--leaf); }
   .ask{font-size:16px;padding:10px 13px;min-height:46px}
   .chip{height:50px;font-size:21px}
   .logo{font-size:38px}
+  /* The arcade screen with a footer picker is the tightest thing in the app:
+     at 375x553 it computed to 513 of 525, about 12px clear, and .col has no
+     overflow so it would spill rather than scroll. Trimming the picker here
+     buys 8px back for every game that uses one. */
+  .picker{margin-top:7px}
+  .picker button{padding:10px 6px;font-size:13px}
 }
 @media (prefers-reduced-motion:reduce){ *{-webkit-animation-duration:.01ms!important;animation-duration:.01ms!important} }
 </style>
@@ -228,7 +240,7 @@ table.st tr.ok td:first-child { color:var(--leaf); }
   <div class="col">
     <div>
       <h1 class="logo outlined" id="logo"><span class="b">Brain</span>Snacks</h1>
-      <p class="tag">Fourteen games. Most of them have a catch.</p>
+      <p class="tag">Twenty games. Most of them have a catch.</p>
     </div>
     <div class="cards">
       <button class="card c-tricks" data-go="tricks">
@@ -300,6 +312,36 @@ table.st tr.ok td:first-child { color:var(--leaf); }
         <span class="cart"><svg viewBox="0 0 84 42" id="ic-fill"></svg></span>
         <span class="cnm">Fill It</span>
         <span class="csb" id="sub-fill">Cover every square</span>
+      </button>
+      <button class="card c-cups" data-go="cups">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-cups"></svg></span>
+        <span class="cnm">Cups</span>
+        <span class="csb" id="sub-cups">Where is the ball?</span>
+      </button>
+      <button class="card c-follow" data-go="follow">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-follow"></svg></span>
+        <span class="cnm">Follow</span>
+        <span class="csb" id="sub-follow">Keep your eye on them</span>
+      </button>
+      <button class="card c-howmany" data-go="howmany">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-howmany"></svg></span>
+        <span class="cnm">How Many</span>
+        <span class="csb" id="sub-howmany">A quick look</span>
+      </button>
+      <button class="card c-pile" data-go="pile">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-pile"></svg></span>
+        <span class="cnm">Which Pile</span>
+        <span class="csb" id="sub-pile">More, not bigger</span>
+      </button>
+      <button class="card c-colour" data-go="colour">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-colour"></svg></span>
+        <span class="cnm">Say the Colour</span>
+        <span class="csb" id="sub-colour">Ignore the word</span>
+      </button>
+      <button class="card c-opp" data-go="opp">
+        <span class="cart"><svg viewBox="0 0 84 42" id="ic-opp"></svg></span>
+        <span class="cnm">Opposite Day</span>
+        <span class="csb" id="sub-opp">Tap the other one</span>
       </button>
       <div class="row mid wrapfull">
         <button class="mini" id="mute-1">Sound on</button>
@@ -399,6 +441,12 @@ table.st tr.ok td:first-child { color:var(--leaf); }
 <script src="untangle.js"></script>
 <script src="whichway.js"></script>
 <script src="fillit.js"></script>
+<script src="cups.js"></script>
+<script src="follow.js"></script>
+<script src="howmany.js"></script>
+<script src="whichpile.js"></script>
+<script src="colour.js"></script>
+<script src="opposite.js"></script>
 <script>BS.boot();</script>
 </body>
 </html>

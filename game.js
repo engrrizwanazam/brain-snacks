@@ -553,6 +553,48 @@ var BS = (function () {
       A.ink(A.S('rect', { x: 22 + fp[i][0] * 14, y: 7 + fp[i][1] * 14, width: 13, height: 13, rx: 3,
         fill: fp[i][2] }, a), 2.2);
     }
+
+    /* --- v12 games --- */
+    a = document.getElementById('ic-cups'); A.clear(a);
+    for (i = 0; i < 3; i++) {
+      A.ink(A.S('path', { d: 'M' + (14 + i * 22) + ',34 L' + (18 + i * 22) + ',12 L' +
+        (34 + i * 22) + ',12 L' + (38 + i * 22) + ',34 Z', fill: '#F0466F' }, a), 2.4);
+    }
+    A.ink(A.S('circle', { cx: 42, cy: 8, r: 6, fill: '#FFC93C' }, a), 2.2);
+
+    a = document.getElementById('ic-follow'); A.clear(a);
+    var fq = [[14, 12, '#FFC93C'], [42, 8, '#8FA8C4'], [66, 18, '#FFC93C'],
+              [26, 32, '#8FA8C4'], [56, 34, '#8FA8C4']];
+    for (i = 0; i < fq.length; i++) {
+      A.ink(A.S('circle', { cx: fq[i][0], cy: fq[i][1], r: 7, fill: fq[i][2] }, a), 2.2);
+    }
+
+    a = document.getElementById('ic-howmany'); A.clear(a);
+    var hm = [[16, 12], [32, 9], [48, 14], [24, 28], [42, 30], [60, 24]];
+    for (i = 0; i < hm.length; i++) {
+      A.ink(A.S('circle', { cx: hm[i][0], cy: hm[i][1], r: 6, fill: '#F0466F' }, a), 2.2);
+    }
+    A.txt('?', { x: 72, y: 30, 'font-size': 22, fill: '#241534', opacity: '.5' }, a);
+
+    a = document.getElementById('ic-pile'); A.clear(a);
+    for (i = 0; i < 3; i++) {
+      A.ink(A.S('circle', { cx: 14 + (i % 2) * 16, cy: 12 + i * 11, r: 9, fill: '#6EC6E8' }, a), 2.2);
+    }
+    for (i = 0; i < 5; i++) {
+      A.ink(A.S('circle', { cx: 54 + (i % 3) * 11, cy: 11 + Math.floor(i / 3) * 13, r: 5.5,
+        fill: '#FFC93C' }, a), 2 );
+    }
+
+    a = document.getElementById('ic-colour'); A.clear(a);
+    A.ink(A.S('rect', { x: 8, y: 8, width: 68, height: 26, rx: 6, fill: '#FFF6E6' }, a), 2.4);
+    A.txt('RED', { x: 42, y: 29, 'font-size': 19, fill: '#6EC6E8' }, a);
+
+    a = document.getElementById('ic-opp'); A.clear(a);
+    A.ink(A.S('ellipse', { cx: 22, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
+    A.ink(A.S('ellipse', { cx: 62, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
+    A.ink(A.S('circle', { cx: 22, cy: 18, r: 8, fill: '#F3E4C6' }, a), 2.4);
+    A.ink(A.S('path', { d: 'M40,14 L58,14 M52,9 L58,14 L52,19', fill: 'none' }, a), 3)
+      .setAttribute('stroke', '#3FBF7F');
   }
 
   /* ---------- the play log, for a grown-up ----------
@@ -627,6 +669,12 @@ var BS = (function () {
     set('sub-untangle', num('bs.untangleBest', 'board', 'boards', 'No crossed lines'));
     set('sub-which', num('bs.whichBest', 'right', 'right', 'Ignore the others'));
     set('sub-fill',  num('bs.fillBest', 'board', 'boards', 'Cover every square'));
+    set('sub-cups',  num('bs.cupsBest', 'found', 'found', 'Where is the ball?'));
+    set('sub-follow', num('bs.followBest', 'round', 'rounds', 'Keep your eye on them'));
+    set('sub-howmany', num('bs.howmanyBest', 'right', 'right', 'A quick look'));
+    set('sub-pile',  num('bs.pileBest', 'right', 'right', 'More, not bigger'));
+    set('sub-colour', num('bs.colourBest', 'right', 'right', 'Ignore the word'));
+    set('sub-opp',   num('bs.oppBest', 'right', 'right', 'Tap the other one'));
   }
 
   /* ---------- boot ---------- */
