@@ -1,6 +1,6 @@
 /* Brain Snacks — offline cache.
    BUMP VERSION after every edit, or the phone keeps serving the old copy. */
-var VERSION = 'brain-snacks-v12';
+var VERSION = 'brain-snacks-0455ee0';
 var FILES = ['./', './index.html', './art.js', './game.js', './puzzles.js', './puzzles2.js', './puzzles3.js', './puzzles4.js', './puzzles5.js',
              './pairs.js', './oddone.js', './echo.js', './spot.js', './slide.js',
              './snapshot.js', './trail.js', './wakeup.js', './sortit.js', './maze.js',
