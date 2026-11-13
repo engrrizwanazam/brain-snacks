@@ -65,27 +65,35 @@
 
     /* scramble the positions */
     nodes = [];
-    for (i = 0; i < n; i++) {
-      nodes.push({ x: 46 + Math.random() * 268, y: 56 + Math.random() * 312 });
-    }
-    /* push apart so nothing starts stacked */
-    for (var pass = 0; pass < 60; pass++) {
-      for (i = 0; i < n; i++) {
-        for (j = i + 1; j < n; j++) {
-          var dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
-          var d = Math.sqrt(dx * dx + dy * dy) || 1;
-          if (d < 64) {
-            var push = (64 - d) / 2;
-            nodes[i].x -= dx / d * push; nodes[i].y -= dy / d * push;
-            nodes[j].x += dx / d * push; nodes[j].y += dy / d * push;
+    for (i = 0; i < n; i++) { nodes.push({ x: 0, y: 0 }); }
+    /* Scatter, then push apart anything closer than 64. Used for the first
+       deal AND for every re-deal: the re-deal used to skip the pushing apart,
+       and about one board in nine arrived with one dot sitting on another. */
+    function scatter() {
+      var a2, b2, pass, dx, dy, d, push;
+      for (a2 = 0; a2 < n; a2++) {
+        nodes[a2].x = 46 + Math.random() * 268;
+        nodes[a2].y = 56 + Math.random() * 312;
+      }
+      for (pass = 0; pass < 60; pass++) {
+        for (a2 = 0; a2 < n; a2++) {
+          for (b2 = a2 + 1; b2 < n; b2++) {
+            dx = nodes[b2].x - nodes[a2].x; dy = nodes[b2].y - nodes[a2].y;
+            d = Math.sqrt(dx * dx + dy * dy) || 1;
+            if (d < 64) {
+              push = (64 - d) / 2;
+              nodes[a2].x -= dx / d * push; nodes[a2].y -= dy / d * push;
+              nodes[b2].x += dx / d * push; nodes[b2].y += dy / d * push;
+            }
           }
         }
-      }
-      for (i = 0; i < n; i++) {
-        nodes[i].x = Math.max(40, Math.min(320, nodes[i].x));
-        nodes[i].y = Math.max(48, Math.min(372, nodes[i].y));
+        for (a2 = 0; a2 < n; a2++) {
+          nodes[a2].x = Math.max(40, Math.min(320, nodes[a2].x));
+          nodes[a2].y = Math.max(48, Math.min(372, nodes[a2].y));
+        }
       }
     }
+    scatter();
 
     lines = S('g', {}, api.arena);
     for (i = 0; i < edges.length; i++) {
@@ -115,11 +123,8 @@
     var guard = 0;
     while (crossings === 0 && guard < 40) {
       guard++;
-      for (i = 0; i < n; i++) {
-        nodes[i].x = 46 + Math.random() * 268;
-        nodes[i].y = 56 + Math.random() * 312;
-        A.place(nodes[i].g, nodes[i].x, nodes[i].y);
-      }
+      scatter();
+      for (i = 0; i < n; i++) { A.place(nodes[i].g, nodes[i].x, nodes[i].y); }
       paint();
     }
     api.bar(0);
@@ -156,6 +161,16 @@
   }
 
   BS.registerMode('untangle', {
+    name: 'Untangle', shelf: 'think', color: '#7FD9C4', shade: '#55A793',
+    keys: ['bs.untangleBest'], best: ['bs.untangleBest', 'board', 'boards'], blurb: 'No crossed lines',
+    icon: function (a) {
+      var up = [[22, 8], [62, 10], [26, 34], [60, 32]], ue = [[0, 3], [1, 2], [0, 1], [2, 3]], i;
+      for (i = 0; i < ue.length; i++) {
+        ART.ink(ART.S('line', { x1: up[ue[i][0]][0], y1: up[ue[i][0]][1], x2: up[ue[i][1]][0], y2: up[ue[i][1]][1] }, a), 2.6)
+          .setAttribute('stroke', i < 2 ? '#C74C6B' : '#241534');
+      }
+      for (i = 0; i < 4; i++) { ART.ink(ART.S('circle', { cx: up[i][0], cy: up[i][1], r: 6, fill: '#FFC93C' }, a), 2.4); }
+    },
     start: function (a) {
       api = a;
       clearTimers();

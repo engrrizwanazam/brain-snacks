@@ -186,6 +186,16 @@
   }
 
   BS.registerMode('pairs', {
+    name: 'Pairs', shelf: 'memory', color: '#6EC6E8', shade: '#4695B4',
+    keys: ['bs.pairs.easy', 'bs.pairs.medium', 'bs.pairs.hard', 'bs.pairsBest', 'bs.pairsLevel'],
+    sub: function (load) { var b = load('bs.pairs.medium', null); return b ? ('Best ' + b + ' moves') : 'Match the faces'; },
+    icon: function (a) {
+      for (var i = 0; i < 2; i++) {
+        var g2 = ART.S('g', { transform: 'translate(' + (30 + i * 26) + ',24) rotate(' + (i ? 10 : -10) + ')' }, a);
+        ART.ink(ART.S('rect', { x: -15, y: -19, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, g2), 3);
+        ART.critter(g2, { x: 0, y: 2, size: 10, fill: '#F0466F', ears: 'cat', shadow: false, bob: false, blink: false });
+      }
+    },
     start: function (a) {
       api = a;
       clearTimers();

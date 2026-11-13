@@ -150,6 +150,14 @@
   }
 
   BS.registerMode('sort', {
+    name: 'Sort It', shelf: 'quick', color: '#A9E05F', shade: '#7CAB3C',
+    keys: ['bs.sortBest'], best: ['bs.sortBest', 'sorted', 'sorted'], blurb: 'The rule changes',
+    icon: function (a) {
+      ART.ink(ART.S('path', { d: 'M16,16 L38,16 L34,36 L20,36 Z', fill: '#FFF6E6' }, a), 2.6);
+      ART.ink(ART.S('path', { d: 'M46,16 L68,16 L64,36 L50,36 Z', fill: '#FFF6E6' }, a), 2.6);
+      ART.ink(ART.S('circle', { cx: 27, cy: 8, r: 6.5, fill: '#F0466F' }, a), 2.4);
+      ART.ink(ART.S('rect', { x: 51, y: 2, width: 12, height: 12, rx: 3, fill: '#6EC6E8' }, a), 2.4);
+    },
     start: function (a) {
       api = a; timers = []; bins = [];
       api.title('Sort It');

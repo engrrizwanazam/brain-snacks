@@ -130,6 +130,18 @@
   }
 
   BS.registerMode('trail', {
+    name: 'Trail', shelf: 'quick', color: '#FFD84A', shade: '#C9A61E',
+    keys: ['bs.trailBest'], best: ['bs.trailBest', 'trail', 'trails'], blurb: '1, A, 2, B...',
+    icon: function (a) {
+      var tp = [[24, 30], [40, 10], [60, 26]], tl = ['1', 'A', '2'], i;
+      for (i = 0; i < 2; i++) {
+        ART.ink(ART.S('line', { x1: tp[i][0], y1: tp[i][1], x2: tp[i + 1][0], y2: tp[i + 1][1] }, a), 3);
+      }
+      for (i = 0; i < 3; i++) {
+        ART.ink(ART.S('circle', { cx: tp[i][0], cy: tp[i][1], r: 9, fill: '#FFF6E6' }, a), 2.6);
+        ART.txt(tl[i], { x: tp[i][0], y: tp[i][1] + 4, 'font-size': 10, fill: '#241534' }, a);
+      }
+    },
     start: function (a) {
       api = a;
       clearTimers();

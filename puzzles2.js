@@ -1,27 +1,22 @@
 /* ==========================================================
-   Brain Snacks — puzzles 25-32. Harder than the first batch:
-   line tracing, mirror images, rotation, transitive reasoning.
-   Appended to PUZZLES by puzzles.js.
+   Brain Snacks — pack 2: tracing, mirror images, rotation,
+   transitive reasoning.
    ========================================================== */
 
-var PUZZLES_HARD = (function () {
+BS.addPuzzles((function () {
   'use strict';
 
   var A = ART;
   var S = A.S, G = A.G, at = A.at, ink = A.ink, txt = A.txt;
   var animal = A.animal, star = A.star, scene = A.scene, critter = A.critter;
   var tap = BS.tap, drag = BS.drag, glide = BS.glide;
-
-  function pad(g, w, h, dy) {
-    return S('rect', { x: -w / 2, y: -h / 2 + (dy || 0), width: w, height: h, rx: 10,
-      fill: '#FFFFFF', opacity: '0', 'pointer-events': 'all' }, g);
-  }
-  function hit(x, y, tx, ty, r) { return Math.abs(x - tx) < (r || 44) && Math.abs(y - ty) < (r || 44); }
+  var hit = KIT.hit, pad = KIT.pad;
 
   return [
 
 /* 25 — follow the pipes */
 {
+  d: 31,
   ask: 'Water goes in at the top. Which cup fills up?',
   hint: 'Put your finger on the water and follow the pipe. It changes lanes twice.',
   tell: 'It crosses to the middle pipe, then to the right one. The right cup.',
@@ -66,6 +61,7 @@ var PUZZLES_HARD = (function () {
 
 /* 26 — mirror image */
 {
+  d: 43,
   ask: 'Which one is the mirror of the pattern?',
   hint: 'A mirror swaps left and right. The top row stays the top row.',
   tell: 'The middle one. Every square has moved to the opposite side.',
@@ -112,6 +108,7 @@ var PUZZLES_HARD = (function () {
 
 /* 27 — rotation */
 {
+  d: 36,
   ask: 'The arrow keeps turning. What comes next?',
   hint: 'It turns a quarter turn each time, always the same way.',
   tell: 'One more quarter turn — the arrow should point left.',
@@ -145,6 +142,7 @@ var PUZZLES_HARD = (function () {
 
 /* 28 — make ten */
 {
+  d: 38,
   ask: 'The robot only eats pairs that make 10. Feed it two.',
   hint: 'Try each number and work out what it needs to reach 10.',
   tell: 'The 3 and the 7.',
@@ -183,7 +181,7 @@ var PUZZLES_HARD = (function () {
       picked.push(i); b.box.setAttribute('fill', '#3FBF7F'); BS.SFX.tap();
       if (picked.length < 2) { return; }
       var sum = blocks[picked[0]].v + blocks[picked[1]].v;
-      setTimeout(function () {
+      BS.later(function () {
         if (sum === 10) { BS.win(); return; }
         BS.nope(blocks[picked[0]].g); BS.wobble(blocks[picked[1]].g);
         blocks[picked[0]].box.setAttribute('fill', '#FFC93C');
@@ -196,6 +194,7 @@ var PUZZLES_HARD = (function () {
 
 /* 29 — follow the tangled strings */
 {
+  d: 22,
   ask: 'Which balloon is the cat holding?',
   hint: 'Start at the cat and follow her string with your finger. The others cross over it.',
   tell: 'The yellow balloon on the left.',
@@ -231,6 +230,7 @@ var PUZZLES_HARD = (function () {
 
 /* 30 — which piece fits */
 {
+  d: 34,
   ask: 'One piece is missing. Which one fits?',
   hint: 'Check the shape of the gap AND what the picture should look like there.',
   tell: 'The middle piece — the one with the round bump and the green.',
@@ -268,6 +268,7 @@ var PUZZLES_HARD = (function () {
 
 /* 31 — transitive weighing */
 {
+  d: 47,
   ask: 'Look at both scales. Which one is heaviest?',
   hint: 'The pear beats the apple. The apple beats the plum. So where does the pear sit?',
   tell: 'The pear. It is heavier than the apple, and the apple is heavier than the plum.',
@@ -319,6 +320,7 @@ var PUZZLES_HARD = (function () {
 
 /* 32 — shadow matching */
 {
+  d: 6,
   ask: 'Which shadow belongs to the rabbit?',
   hint: 'Look at the ears. Nothing else has ears that long.',
   tell: 'The one on the right, with the two tall ears.',
@@ -346,9 +348,4 @@ var PUZZLES_HARD = (function () {
 }
 
   ];
-})();
-
-/* fold them onto the main list */
-(function () {
-  for (var i = 0; i < PUZZLES_HARD.length; i++) { PUZZLES.push(PUZZLES_HARD[i]); }
-})();
+})());

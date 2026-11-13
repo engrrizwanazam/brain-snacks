@@ -139,6 +139,14 @@
   }
 
   BS.registerMode('spot', {
+    name: 'Spot It', shelf: 'quick', color: '#FF6F92', shade: '#C74C6B',
+    keys: ['bs.spotBest'], best: ['bs.spotBest', 'picture', 'pictures'], blurb: 'Find the changes',
+    icon: function (a) {
+      ART.ink(ART.S('rect', { x: 8, y: 4, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, a), 3);
+      ART.ink(ART.S('rect', { x: 46, y: 4, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, a), 3);
+      ART.critter(a, { x: 23, y: 21, size: 10, fill: '#6EC6E8', ears: 'cat', shadow: false, bob: false, blink: false });
+      ART.critter(a, { x: 61, y: 21, size: 10, fill: '#FFC93C', ears: 'cat', shadow: false, bob: false, blink: false });
+    },
     start: function (a) {
       api = a;
       clearTimers();

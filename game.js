@@ -1,8 +1,14 @@
 /* ==========================================================
-   Brain Snacks — engine
+   Brain Snacks — engine (v10)
    Screens, routing, input, sound. Drawing lives in art.js.
    Safari 12 safe throughout.
+
+   Content plugs in from outside and the engine knows none of it by name:
+     BS.addPuzzles([...])        puzzle packs, ordered by their own `d`
+     BS.registerMode(key, def)   games, which carry their own card and icon
    ========================================================== */
+
+var PUZZLES = [];
 
 var BS = (function () {
   'use strict';
@@ -10,7 +16,8 @@ var BS = (function () {
   var A = ART;
   var stage, arena, tray, askEl, toastEl;
   var cur = 0, tries = 0, locked = false, muted = false;
-  var modes = {}, liveMode = null;
+  var modes = {}, modeOrder = [], liveMode = null;
+  var pzSeq = 0;
 
   /* ---------- storage ---------- */
   function load(k, d) {
@@ -19,20 +26,71 @@ var BS = (function () {
   }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
+  /* ---------- timers that die with the screen ----------
+     Every delayed callback in a puzzle or a game goes through later(). leave()
+     bumps the generation, so nothing scheduled by one screen can ever fire on
+     the next one. Bare setTimeout in content caused two separate bugs: games
+     repainting over a later screen, and the cup shuffle unlocking input in the
+     middle of its own replay. */
+  var gen = 0;
+  function later(fn, ms) {
+    var mine = gen;
+    return setTimeout(function () { if (mine === gen) { fn(); } }, ms);
+  }
+
+  /* ---------- puzzle packs ----------
+     A pack is just an array of puzzles. Each carries `d`, its place on the
+     difficulty ladder (lower is earlier; use 34.5 to slot between 34 and 35).
+     Load order of the files does not matter. */
+  function addPuzzles(list) {
+    for (var i = 0; i < list.length; i++) {
+      list[i].__seq = pzSeq++;
+      if (typeof list[i].d !== 'number') { list[i].d = 10000 + list[i].__seq; }
+      PUZZLES.push(list[i]);
+    }
+  }
+  function sortPuzzles() {
+    PUZZLES.sort(function (a, b) { return (a.d - b.d) || (a.__seq - b.__seq); });
+  }
+
+  /* Chapters are only a way of showing the ladder. Nothing is locked. */
+  var CHAPTERS = [
+    { n: 'Sunny Meadow', c: '#8ED6A0', s: '#5BA873', host: 'bunny',    f: '#F5E2D0' },
+    { n: 'Duck Pond',    c: '#8FD6EF', s: '#5C9FB8', host: 'duck',     f: '#FFE066' },
+    { n: 'Toy Room',     c: '#FFC98A', s: '#C99152', host: 'bear',     f: '#B07A4C' },
+    { n: 'Candy Lane',   c: '#FFB0C8', s: '#C97E96', host: 'cat',      f: '#FFB03A' },
+    { n: 'Sunset Hill',  c: '#FF9E7A', s: '#C46F52', host: 'fox',      f: '#E8722F' },
+    { n: 'Night Woods',  c: '#9A8FE0', s: '#6A60AC', host: 'owl',      f: '#C58B4F' },
+    { n: 'Robot Lab',    c: '#A9C4E0', s: '#7890AC', host: 'mouse',    f: '#C9BFD6' },
+    { n: 'Snowy Peak',   c: '#CFEBFA', s: '#93B8CC', host: 'penguin',  f: '#4A5578' },
+    { n: 'Star Station', c: '#FFD84A', s: '#C9A61E', host: 'lion',     f: '#E8A63A' }
+  ];
+  function perChapter() { return Math.max(1, Math.ceil(PUZZLES.length / CHAPTERS.length)); }
+  function chapOf(i) { return Math.min(CHAPTERS.length - 1, Math.floor(i / perChapter())); }
+  function chapRange(c) {
+    var per = perChapter(), a = c * per;
+    var b = (c === CHAPTERS.length - 1) ? PUZZLES.length : Math.min(PUZZLES.length, a + per);
+    return [a, b];
+  }
+  function chapDone(c) {
+    var r = chapRange(c), n = 0, i;
+    for (i = r[0]; i < r[1]; i++) { if (isDone(i)) { n++; } }
+    return n;
+  }
+
   /* ---------- which puzzles are solved ----------
-     Every puzzle is open, so "solved" cannot be a single high-water number any
-     more: she can beat 43 while 37 is still unsolved. Keep a set instead. */
+     Progress and the play log are keyed by a puzzle id, never by position, so
+     puzzles can be inserted, removed and re-ordered freely. The id is the
+     puzzle's own `id` if it has one, otherwise a hash of its question. */
   var doneMap = {};
 
-  /* Progress is keyed by a hash of the question text, NOT by array position.
-     Inserting four ramp puzzles at 36 shifted every index after it, and an
-     index-keyed save would have silently re-pointed her solved puzzles at the
-     wrong ones. Ids survive any insert or reorder. */
-  function pid(p) {
-    if (p.__id) { return p.__id; }
-    var h = 5381, t = p.ask, i;
+  function hashOf(t) {
+    var h = 5381, i;
     for (i = 0; i < t.length; i++) { h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; }
-    p.__id = h.toString(36);
+    return h.toString(36);
+  }
+  function pid(p) {
+    if (!p.__id) { p.__id = p.id ? String(p.id) : hashOf(p.ask); }
     return p.__id;
   }
   function isDone(i) { return PUZZLES[i] ? doneMap[pid(PUZZLES[i])] === 1 : false; }
@@ -42,8 +100,8 @@ var BS = (function () {
     if (doneMap[k] !== 1) { doneMap[k] = 1; save('bs.doneIds', doneMap); }
   }
   function doneCount() {
-    var n = 0, k;
-    for (k in doneMap) { if (doneMap.hasOwnProperty(k) && doneMap[k] === 1) { n++; } }
+    var n = 0, i;
+    for (i = 0; i < PUZZLES.length; i++) { if (isDone(i)) { n++; } }
     return n;
   }
   function firstOpen() {
@@ -51,19 +109,39 @@ var BS = (function () {
     return -1;
   }
 
+  /* The 60 puzzles of v8/v9, in the order they had then. Old saves that were
+     keyed by position are translated through this list exactly once. */
+  var LEGACY = ['yawkti', 'l4u72d', '1jgb4zk', '11lk79u', '1kz7der', '1es9tx9', 'l2l2v3', '32v85j', 'zdq2gb',
+    '1vgwhy6', '1w0buj8', '1ysgbhv', 'dfhx1v', 'opzbk4', '1ke47in', '1gl1kj0', 'qs1tz6', 'p2f99a', '1y7wm3k',
+    '6mm2y8', '1brje61', '1e2b096', '1ttqk68', '1kyqyed', 'ui0im5', 'msqh1d', '14zvwij', 'ec5pfz', '1j8snow',
+    'z84cn9', '1w6swwe', '1mq92nn', '1819mp0', '1fghxgd', 'zcawuo', '27t3oz', 'nssa65', '14vtp0b', 'a4jbqo',
+    'gttjfw', '1pvals2', '1j7rsr', '1cppcnm', '10dzmis', '10nuo4y', '1p6j2up', 'e5diqo', '15b3x2l', '1f03k50',
+    '17ppwl3', '1udn1ix', '1l0w70z', '15nioxl', '1ncq38l', '5u8snc', '18q45fj', 'p7xga1', '1igf2wm', 'n1ftir',
+    'a3vlns'];
+
   /* ---------- play log ----------
      Local only. Never sent anywhere, never shown to her. It exists to answer
      one question: which puzzles does she come back to, and which does she put
      down. Read it by holding the title on the home screen for three seconds.
        o opens  w wins  n wrong taps  h hint taps  t told  q left unsolved
-       ms fastest solve */
-  var stats = {}, tOpen = 0, inPuzzle = false;
+       ms fastest solve
+     Keyed by puzzle id (bs.log). v9 keyed it by position (bs.stats), which a
+     re-order would have silently scrambled. */
+  var stats = {}, tOpen = 0, inPuzzle = false, statTimer = null;
   function stat(i) {
-    var k = String(i);
+    var k = PUZZLES[i] ? pid(PUZZLES[i]) : ('x' + i);
     if (!stats[k]) { stats[k] = { o: 0, w: 0, n: 0, h: 0, t: 0, q: 0, ms: 0 }; }
     return stats[k];
   }
-  function saveStats() { save('bs.stats', stats); }
+  function flushStats() {
+    if (statTimer) { clearTimeout(statTimer); statTimer = null; }
+    save('bs.log', stats);
+  }
+  /* writes are batched: a burst of wrong taps is one localStorage write, not ten */
+  function saveStats() {
+    if (statTimer) { return; }
+    statTimer = setTimeout(function () { statTimer = null; save('bs.log', stats); }, 500);
+  }
 
   /* ---------- sound ---------- */
   var actx = null;
@@ -93,6 +171,8 @@ var BS = (function () {
     flip: function () { beep(520, 0, .06, 'triangle', .07); },
     good: function () { beep(784, 0, .11, 'triangle', .13); beep(1175, .07, .16, 'triangle', .11); },
     bad:  function () { beep(240, 0, .16, 'sawtooth', .07, 120); },
+    pop:  function () { beep(520, 0, .09, 'sine', .1, 940); },
+    hop:  function () { beep(330, 0, .1, 'sine', .08, 620); },
     tickTock: function () { beep(880, 0, .04, 'square', .04); },
     note: function (hz) { beep(hz, 0, .26, 'triangle', .12); },
     win:  function () { var n = [523, 659, 784, 1047, 1319], i;
@@ -117,24 +197,14 @@ var BS = (function () {
   }
 
   /* ---------- interactions ---------- */
-  /* iOS fires a synthetic mouseup after touchend for the same physical tap, up
-     to about 300ms later, so both listeners would run the handler twice. The
-     old guard was a flat 280ms lockout on the element, which killed the second
-     tap of a genuine double press: on the bee puzzle you press the same arrow
-     twice in a row and only one arrow appeared. Suppress the *synthetic mouse
-     event* specifically instead, and keep only a very short guard against a
-     true double-fire of the same event type. */
   function tap(el, fn) {
     el.style.cursor = 'pointer';
-    var lastTouch = 0, lastFire = 0;
+    var fired = false;
     function go(e) {
       if (locked) { return; }
-      var now = Date.now();
-      if (e.type === 'touchend') { lastTouch = now; }
-      else if (now - lastTouch < 700) { return; }   /* the ghost mouse event */
       e.preventDefault(); e.stopPropagation();
-      if (now - lastFire < 60) { return; }
-      lastFire = now;
+      if (fired) { return; }
+      fired = true; setTimeout(function () { fired = false; }, 280);
       fn(el);
     }
     el.addEventListener('touchend', go, false);
@@ -158,6 +228,7 @@ var BS = (function () {
       if (opts.onGrab) { opts.onGrab(); }
       document.addEventListener('touchmove', move, { passive: false });
       document.addEventListener('touchend', up, false);
+      document.addEventListener('touchcancel', up, false);
       document.addEventListener('mousemove', move, false);
       document.addEventListener('mouseup', up, false);
     }
@@ -181,6 +252,7 @@ var BS = (function () {
       live = false;
       document.removeEventListener('touchmove', move, { passive: false });
       document.removeEventListener('touchend', up, false);
+      document.removeEventListener('touchcancel', up, false);
       document.removeEventListener('mousemove', move, false);
       document.removeEventListener('mouseup', up, false);
       SFX.drop();
@@ -203,6 +275,7 @@ var BS = (function () {
     var x0 = el.__x || 0, y0 = el.__y || 0, t0 = Date.now();
     var mine = claim(el);
     ms = ms || 260;
+    el.__busyUntil = t0 + ms + 40;
     A.tick(function () {
       if (el.__anim !== mine) { return true; }
       var k = Math.min(1, (Date.now() - t0) / ms);
@@ -280,9 +353,9 @@ var BS = (function () {
 
   function confetti() {
     var cols = ['#FFC93C', '#FF8A3D', '#F0466F', '#3FBF7F', '#6EC6E8', '#FFF6E6'], i, b;
-    for (i = 0; i < 30; i++) {
+    for (i = 0; i < 26; i++) {
       b = document.createElement('div');
-      b.className = 'bit';
+      b.className = 'bit' + (i % 3 === 0 ? ' round' : '');
       b.style.left = (Math.random() * 100) + '%';
       b.style.background = cols[i % cols.length];
       var an = 'fall ' + (1.5 + Math.random()) + 's linear ' + (Math.random() * .5) + 's both';
@@ -292,38 +365,66 @@ var BS = (function () {
     }
   }
 
-  var WINS = ['Nice!', 'Got it!', 'Clever!', 'Yes!', 'Sharp!'];
+  /* the little celebration above the win text: the chapter's host, hopping */
+  function drawWinArt(c) {
+    var a = document.getElementById('win-art');
+    if (!a) { return; }
+    A.clear(a);
+    var ch = CHAPTERS[c], i;
+    A.S('circle', { cx: 100, cy: 58, r: 54, fill: A.glow(a, ch.c, .55) }, a);
+    var pts = [[38, 34, 11], [164, 30, 13], [150, 84, 8], [48, 86, 9]];
+    for (i = 0; i < pts.length; i++) { A.star(a, pts[i][0], pts[i][1], pts[i][2], '#FFC93C', 3); }
+    var h = A.animal(a, { kind: ch.host, x: 100, y: 44, size: 19, fill: ch.f, mood: 'happy', shadow: false });
+    var n = 0;
+    function again() { A.hop(h, 9, 620); n++; if (n < 40) { later(again, 1100); } }
+    again();
+  }
+
+  var WINS = ['Nice!', 'Got it!', 'Clever!', 'Yes!', 'Sharp!', 'Brilliant!', 'Woohoo!'];
   function win() {
     if (locked) { return; }
     locked = true;
     SFX.win(); confetti();
-    var L = PUZZLES[cur];
+    A.burst(stage, 180, 140, { n: 12, r: 96, ms: 820 });
+    A.cheer(stage);
+    var L = PUZZLES[cur], c = chapOf(cur), r = chapRange(c);
+    var was = isDone(cur);
     markDone(cur);
     var sw = stat(cur), took = tOpen ? (Date.now() - tOpen) : 0;
     sw.w++;
     if (took > 0 && (sw.ms === 0 || took < sw.ms)) { sw.ms = took; }
-    saveStats();
-    setTimeout(function () {
+    flushStats();
+    var whole = !was && chapDone(c) === (r[1] - r[0]);
+    later(function () {
       document.getElementById('win-word').textContent = WINS[Math.floor(Math.random() * WINS.length)];
       document.getElementById('win-why').textContent = L.why || '';
+      var badge = document.getElementById('win-chap');
+      badge.textContent = whole ? ('★ All of ' + CHAPTERS[c].n + ' solved! ★') : '';
+      badge.style.display = whole ? '' : 'none';
       document.getElementById('next').textContent = (cur + 1 < PUZZLES.length) ? 'Next puzzle' : 'Back to the list';
       document.getElementById('win').className = 'over on';
-    }, 620);
+      drawWinArt(c);
+      if (whole) { confetti(); }
+    }, 780);
   }
 
   function chips(list, rightIndex) {
     tray.innerHTML = '';
+    /* one long label makes the whole row small, so the buttons always match */
+    var wordy = false, w;
+    for (w = 0; w < list.length; w++) { if (String(list[w]).length > 4) { wordy = true; } }
     tray.style.gridTemplateColumns = 'repeat(' + Math.min(4, list.length) + ', 1fr)';
     for (var i = 0; i < list.length; i++) {
       (function (i) {
         var b = document.createElement('button');
-        b.className = 'chip'; b.innerHTML = list[i];
+        b.className = 'chip' + (wordy ? ' wordy' : '');
+        b.innerHTML = list[i];
         b.addEventListener('click', function () {
           if (locked) { return; }
           if (i === rightIndex) { win(); }
           else {
-            b.className = 'chip'; void b.offsetWidth; b.className = 'chip bad';
-            nope(); setTimeout(function () { b.className = 'chip'; }, 700);
+            b.className = b.className.replace(' bad', ''); void b.offsetWidth; b.className += ' bad';
+            nope(); later(function () { b.className = b.className.replace(' bad', ''); }, 700);
           }
         }, false);
         tray.appendChild(b);
@@ -340,13 +441,14 @@ var BS = (function () {
   }
   function leave() {
     if (inPuzzle) {
-      if (!isDone(cur)) { stat(cur).q++; saveStats(); }
+      if (!isDone(cur)) { stat(cur).q++; }
       inPuzzle = false;
+      flushStats();
     }
-    /* Several puzzles finish on a setTimeout (the jugs win 400ms after the last
-       pour, the river 730ms after the last crossing). Leaving inside that window
-       used to pop the win overlay over whatever screen came next, and mark the
-       WRONG puzzle solved. openPuzzle() clears this again. */
+    /* Anything still pending from the screen we are leaving is dead from here:
+       later() callbacks see a new generation, and input stays locked until the
+       next screen opens it again. */
+    gen++;
     locked = true;
     if (liveMode && modes[liveMode] && modes[liveMode].stop) { modes[liveMode].stop(); }
     liveMode = null;
@@ -358,28 +460,54 @@ var BS = (function () {
   }
 
   function goHome() {
-    leave(); drawHomeArt(); paintSubs(); show('s-home');
+    leave(); drawMascot(); paintSubs(); show('s-home');
   }
 
   /* ---------- puzzles ---------- */
   /* Nothing is locked. One puzzle she cannot crack used to hide every puzzle
-     after it, and the hard batch is not in difficulty order anyway. */
+     after it. The chapters only show roughly how far up the ladder she is. */
   function paintGrid() {
     var box = document.getElementById('nodes');
     box.innerHTML = '';
-    var open = firstOpen();
+    var open = firstOpen(), c, i, r, sec, head, grid, done;
     document.getElementById('grid-count').textContent = doneCount() + ' / ' + PUZZLES.length + ' solved';
-    for (var i = 0; i < PUZZLES.length; i++) {
-      (function (i) {
-        var b = document.createElement('button');
-        b.className = 'node' + (isDone(i) ? ' done' : (i === open ? ' next' : ''));
-        b.innerHTML = (i + 1) + (isDone(i) ? '<span class="tick">&#10003;</span>' : '');
-        b.addEventListener('click', function () { SFX.tap(); openPuzzle(i); }, false);
-        box.appendChild(b);
-      })(i);
+    for (c = 0; c < CHAPTERS.length; c++) {
+      r = chapRange(c);
+      if (r[0] >= r[1]) { continue; }
+      done = chapDone(c);
+      sec = document.createElement('div');
+      sec.className = 'chap' + (done === r[1] - r[0] ? ' all' : '');
+      head = document.createElement('div');
+      head.className = 'chap-h';
+      head.style.background = CHAPTERS[c].c;
+      head.style.boxShadow = '0 4px 0 ' + CHAPTERS[c].s;
+      head.innerHTML = '<svg class="chap-i" viewBox="0 0 48 48" id="chap-i' + c + '"></svg>' +
+        '<span class="chap-n">' + CHAPTERS[c].n + '</span>' +
+        '<span class="chap-c">' + (done === r[1] - r[0] ? '★ ' : '') + done + ' / ' + (r[1] - r[0]) + '</span>';
+      sec.appendChild(head);
+      grid = document.createElement('div');
+      grid.className = 'grid';
+      for (i = r[0]; i < r[1]; i++) {
+        (function (i) {
+          var b = document.createElement('button');
+          b.className = 'node' + (isDone(i) ? ' done' : (i === open ? ' next' : ''));
+          b.innerHTML = (i + 1) + (isDone(i) ? '<span class="tick">★</span>' : '');
+          b.addEventListener('click', function () { SFX.tap(); openPuzzle(i); }, false);
+          grid.appendChild(b);
+        })(i);
+      }
+      sec.appendChild(grid);
+      box.appendChild(sec);
+      A.animal(document.getElementById('chap-i' + c), { kind: CHAPTERS[c].host, x: 24, y: 21, size: 12.5,
+        fill: CHAPTERS[c].f, shadow: false, bob: false, blink: false });
     }
+    /* bring the next unsolved puzzle into view */
+    if (open > 0) {
+      var kids = box.children, target = kids[Math.min(kids.length - 1, chapOf(open))];
+      if (target) { box.scrollTop = Math.max(0, target.offsetTop - box.offsetTop - 4); }
+    } else { box.scrollTop = 0; }
   }
-  function goGrid() { leave(); paintGrid(); show('s-grid'); }
+  function goGrid() { leave(); show('s-grid'); paintGrid(); }
 
   function openPuzzle(i) {
     if (i >= PUZZLES.length) { goGrid(); return; }
@@ -388,7 +516,7 @@ var BS = (function () {
     inPuzzle = true; tOpen = Date.now();
     stat(i).o++; saveStats();
     document.getElementById('bulb').className = 'bulb';
-    document.getElementById('lvnum').textContent = 'Puzzle ' + (i + 1) + ' of ' + PUZZLES.length;
+    document.getElementById('lvnum').textContent = CHAPTERS[chapOf(i)].n + ' · ' + (i + 1);
     A.clear(stage); tray.innerHTML = '';
     var L = PUZZLES[i];
     askEl.textContent = L.ask;
@@ -398,7 +526,14 @@ var BS = (function () {
   }
 
   /* ---------- arcade ---------- */
-  function registerMode(key, def) { modes[key] = def; }
+  /* def: { name, shelf:'quick'|'memory'|'think', color, shade, blurb,
+            best:[storageKey, one, many] or sub:function(load){...},
+            keys:[storage keys to clear on Start over],
+            icon:function(svg 84x42){...}, start:function(api){...}, stop } */
+  function registerMode(key, def) {
+    if (!modes[key]) { modeOrder.push(key); }
+    modes[key] = def;
+  }
 
   var API = {
     arena: null,
@@ -408,7 +543,7 @@ var BS = (function () {
       document.getElementById('ar-fill').style.width = Math.max(0, Math.min(1, frac)) * 100 + '%';
       document.getElementById('ar-bar').className = 'bar' + (warn ? ' warn' : '');
     },
-    showBar: function (on) { document.getElementById('ar-bar').style.display = on ? '' : 'none'; },
+    showBar: function (on) { document.getElementById('ar-bar').style.visibility = on ? '' : 'hidden'; },
     foot: function (html) { document.getElementById('ar-foot').innerHTML = html; return document.getElementById('ar-foot'); },
     toast: function (word, colour) { flash(document.getElementById('ar-toast'), word, colour); },
     over: function (word, why, againLabel) {
@@ -418,7 +553,7 @@ var BS = (function () {
       document.getElementById('ar-over').className = 'over on';
     },
     hideOver: function () { document.getElementById('ar-over').className = 'over'; },
-    confetti: confetti,
+    confetti: confetti, later: later,
     load: load, save: save, SFX: SFX
   };
 
@@ -429,184 +564,121 @@ var BS = (function () {
     A.clear(arena);
     API.showBar(true);
     API.foot('');
+    API.score('');
     show('s-arcade');
     modes[key].start(API);
   }
 
-  /* ---------- home art ---------- */
-  function drawHomeArt() {
-    var a, g2, i;
+  /* ---------- home ---------- */
+  var SHELVES = [
+    { k: 'quick',  n: 'Quick!' },
+    { k: 'memory', n: 'Remember!' },
+    { k: 'think',  n: 'Figure it out' }
+  ];
+  var WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven',
+    'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen', 'Twenty',
+    'Twenty-one', 'Twenty-two', 'Twenty-three', 'Twenty-four', 'Twenty-five'];
 
-    a = document.getElementById('ic-tricks'); A.clear(a);
-    A.critter(a, { x: 46, y: 26, size: 15, fill: '#FF8A3D', ears: 'round', mood: 'wow', shadow: false });
-    A.star(a, 68, 9, 8, '#FFF6E6');
-    A.txt('?', { x: 20, y: 30, 'font-size': 24, fill: '#241534', opacity: '.45' }, a);
+  function cardFor(key) {
+    var d = modes[key], b = document.createElement('button');
+    b.className = 'card';
+    b.setAttribute('data-go', key);
+    b.style.background = d.color || '#FFC93C';
+    b.style.boxShadow = '0 5px 0 ' + (d.shade || '#C99A16');
+    b.innerHTML = '<span class="cart"><svg viewBox="0 0 84 42" id="ic-' + key + '"></svg></span>' +
+      '<span class="cnm">' + (d.name || key) + '</span>' +
+      '<span class="csb" id="sub-' + key + '"></span>';
+    b.addEventListener('click', function () { ac(); SFX.tap(); startMode(key); }, false);
+    return b;
+  }
 
-    a = document.getElementById('ic-pairs'); A.clear(a);
-    for (i = 0; i < 2; i++) {
-      g2 = A.G(a, 30 + i * 26, 24);
-      g2.setAttribute('transform', 'translate(' + (30 + i * 26) + ',24) rotate(' + (i ? 10 : -10) + ')');
-      A.ink(A.S('rect', { x: -15, y: -19, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, g2), 3);
-      A.critter(g2, { x: 0, y: 2, size: 10, fill: '#F0466F', ears: 'cat', shadow: false, bob: false });
-    }
-
-    a = document.getElementById('ic-odd'); A.clear(a);
-    A.critter(a, { x: 24, y: 13, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false });
-    A.critter(a, { x: 60, y: 13, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false });
-    A.critter(a, { x: 24, y: 35, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false });
-    A.critter(a, { x: 60, y: 35, size: 9, fill: '#3FBF7F', ears: 'round', mood: 'wow', shadow: false });
-
-    a = document.getElementById('ic-echo'); A.clear(a);
-    var ec = ['#F0466F', '#6EC6E8', '#FFC93C', '#FFF6E6'];
-    for (i = 0; i < 4; i++) {
-      var lit = (i === 1);
-      A.ink(A.S('rect', { x: 22 + (i % 2) * 22, y: 4 + Math.floor(i / 2) * 21, width: 19, height: 18, rx: 5,
-        fill: lit ? ec[i] : A.tint(ec[i], -46) }, a), 3);
-      if (lit) {
-        A.S('rect', { x: 20 + (i % 2) * 22, y: 2 + Math.floor(i / 2) * 21, width: 23, height: 22, rx: 7,
-          fill: ec[i], opacity: '.4' }, a);
-        A.S('rect', { x: 26 + (i % 2) * 22, y: 8 + Math.floor(i / 2) * 21, width: 7, height: 4, rx: 2,
-          fill: '#FFFFFF', opacity: '.5' }, a);
+  /* Built once from whatever registered itself. Icons are drawn once and are
+     static, so coming back to the home screen redraws nothing but the mascot. */
+  function buildHome() {
+    var box = document.getElementById('cards'), s, i, list, h, row, key;
+    var hero = document.getElementById('hero');
+    hero.addEventListener('click', function () { ac(); SFX.tap(); goGrid(); }, false);
+    for (s = 0; s < SHELVES.length; s++) {
+      list = [];
+      for (i = 0; i < modeOrder.length; i++) {
+        if ((modes[modeOrder[i]].shelf || 'think') === SHELVES[s].k) { list.push(modeOrder[i]); }
+      }
+      if (!list.length) { continue; }
+      h = document.createElement('div');
+      h.className = 'shelf';
+      h.textContent = SHELVES[s].n;
+      box.appendChild(h);
+      row = document.createElement('div');
+      row.className = 'shelf-grid';
+      for (i = 0; i < list.length; i++) {
+        key = list[i];
+        var b = cardFor(key);
+        if (list.length % 2 === 1 && i === list.length - 1) { b.className += ' wide'; }
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+      for (i = 0; i < list.length; i++) {
+        if (modes[list[i]].icon) { modes[list[i]].icon(document.getElementById('ic-' + list[i])); }
       }
     }
+    var foot = document.getElementById('home-foot');
+    box.appendChild(foot);
+    var n = modeOrder.length + 1;
+    document.getElementById('tag').textContent = (WORDS[n] || n) + ' games. Most of them have a catch.';
+  }
 
-    a = document.getElementById('ic-spot'); A.clear(a);
-    A.ink(A.S('rect', { x: 8, y: 4, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, a), 3);
-    A.ink(A.S('rect', { x: 46, y: 4, width: 30, height: 38, rx: 6, fill: '#FFF6E6' }, a), 3);
-    A.critter(a, { x: 23, y: 21, size: 10, fill: '#6EC6E8', ears: 'cat', shadow: false, bob: false });
-    A.critter(a, { x: 61, y: 21, size: 10, fill: '#FFC93C', ears: 'cat', shadow: false, bob: false });
+  /* two friends peeking over the title, redrawn (and re-animated) on each visit */
+  function drawMascot() {
+    var a = document.getElementById('mascot');
+    if (!a) { return; }
+    A.clear(a);
+    A.star(a, 26, 20, 7, '#FFC93C', 2.5);
+    A.star(a, 300, 16, 9, '#FFF6E6', 2.5);
+    A.star(a, 318, 44, 5, '#FF8A3D', 2);
+    A.star(a, 12, 46, 4.5, '#6EC6E8', 2);
+    A.animal(a, { kind: 'cat', x: 62, y: 36, size: 15, fill: '#FF8A3D', look: .7, shadow: false });
+    A.animal(a, { kind: 'frog', x: 268, y: 40, size: 14, fill: '#5FD08A', look: -.7, shadow: false });
 
-    a = document.getElementById('ic-slide'); A.clear(a);
-    var sc = ['#FF8A3D', '#6EC6E8', '#3FBF7F', '#FFC93C', '#F0466F'];
-    A.S('rect', { x: 19, y: 6, width: 47, height: 32, rx: 6, fill: '#241534', opacity: '.16' }, a);
-    for (i = 0; i < 5; i++) {
-      var tx = 21 + (i % 3) * 15, ty = 8 + Math.floor(i / 3) * 15;
-      A.ink(A.S('rect', { x: tx, y: ty, width: 13, height: 13, rx: 3.5,
-        fill: A.bodyFill(a, sc[i]) }, a), 2.6);
-      A.S('rect', { x: tx + 2.5, y: ty + 2.5, width: 5, height: 2.5, rx: 1.2, fill: '#FFFFFF', opacity: '.35' }, a);
+    var c = chapOf(Math.max(0, firstOpen())), ch = CHAPTERS[c];
+    var h = document.getElementById('ic-tricks');
+    A.clear(h);
+    A.S('circle', { cx: 48, cy: 40, r: 40, fill: A.glow(h, '#FFF6E6', .55) }, h);
+    A.animal(h, { kind: ch.host, x: 46, y: 34, size: 17, fill: ch.f, mood: 'wow', shadow: false });
+    A.star(h, 80, 16, 9, '#FFF6E6');
+    A.txt('?', { x: 13, y: 34, 'font-size': 30, fill: '#241534', opacity: '.4' }, h);
+  }
+
+  function best(key, one, many, dflt) {
+    var v = load(key, 0);
+    return v ? ('Best ' + v + ' ' + (v === 1 ? one : many)) : dflt;
+  }
+
+  function paintSubs() {
+    function set(id, v) { var e = document.getElementById(id); if (e) { e.textContent = v; } }
+    var nd = doneCount(), i, d, open = firstOpen();
+    set('sub-tricks', nd ? (nd + ' of ' + PUZZLES.length + ' solved') : (PUZZLES.length + ' puzzles, each with a catch'));
+    set('hero-chap', open < 0 ? 'All solved!' : CHAPTERS[chapOf(open)].n);
+    var fill = document.getElementById('hero-fill');
+    if (fill) { fill.style.width = (PUZZLES.length ? Math.round(nd / PUZZLES.length * 100) : 0) + '%'; }
+    for (i = 0; i < modeOrder.length; i++) {
+      d = modes[modeOrder[i]];
+      if (d.sub) { set('sub-' + modeOrder[i], d.sub(load)); }
+      else if (d.best) { set('sub-' + modeOrder[i], best(d.best[0], d.best[1], d.best[2], d.blurb || '')); }
+      else { set('sub-' + modeOrder[i], d.blurb || ''); }
     }
-    A.S('path', { d: 'M56,28 l7,0 M60,25 l4,3 l-4,3', fill: 'none', stroke: '#241534',
-      'stroke-width': 2.4, 'stroke-linecap': 'round', opacity: '.5' }, a);
-
-    a = document.getElementById('ic-snap'); A.clear(a);
-    for (i = 0; i < 6; i++) {
-      var lit2 = (i === 1 || i === 4);
-      A.ink(A.S('rect', { x: 21 + (i % 3) * 15, y: 6 + Math.floor(i / 3) * 15,
-        width: 13, height: 13, rx: 3.5, fill: lit2 ? '#FFF6E6' : '#241534' }, a), 2.4);
-      if (lit2) { A.S('circle', { cx: 27.5 + (i % 3) * 15, cy: 12.5 + Math.floor(i / 3) * 15, r: 3.4, fill: '#F0466F' }, a); }
-    }
-
-    a = document.getElementById('ic-trail'); A.clear(a);
-    var tp = [[24, 30], [40, 10], [60, 26]];
-    for (i = 0; i < 2; i++) {
-      A.ink(A.S('line', { x1: tp[i][0], y1: tp[i][1], x2: tp[i + 1][0], y2: tp[i + 1][1] }, a), 3)
-        .setAttribute('stroke', '#241534');
-    }
-    var tl = ['1', 'A', '2'];
-    for (i = 0; i < 3; i++) {
-      A.ink(A.S('circle', { cx: tp[i][0], cy: tp[i][1], r: 9, fill: '#FFF6E6' }, a), 2.6);
-      A.txt(tl[i], { x: tp[i][0], y: tp[i][1] + 4, 'font-size': 10, fill: '#241534' }, a);
-    }
-
-    a = document.getElementById('ic-wake'); A.clear(a);
-    A.critter(a, { x: 30, y: 22, size: 12, fill: '#FFC93C', ears: 'round', shadow: false, bob: false });
-    A.critter(a, { x: 58, y: 22, size: 12, fill: '#8C86A8', ears: 'round', mood: 'sleep', shadow: false, bob: false });
-    A.S('path', { d: 'M66,10 l6,-5 M72,10 l-6,-5', stroke: '#241534', 'stroke-width': 2.4,
-      'stroke-linecap': 'round', fill: 'none', opacity: '.6' }, a);
-
-    a = document.getElementById('ic-sort'); A.clear(a);
-    A.ink(A.S('path', { d: 'M16,16 L38,16 L34,36 L20,36 Z', fill: '#FFF6E6' }, a), 2.6);
-    A.ink(A.S('path', { d: 'M46,16 L68,16 L64,36 L50,36 Z', fill: '#FFF6E6' }, a), 2.6);
-    A.ink(A.S('circle', { cx: 27, cy: 8, r: 6.5, fill: '#F0466F' }, a), 2.4);
-    A.ink(A.S('rect', { x: 51, y: 2, width: 12, height: 12, rx: 3, fill: '#6EC6E8' }, a), 2.4);
-
-    a = document.getElementById('ic-maze'); A.clear(a);
-    A.ink(A.S('rect', { x: 20, y: 5, width: 44, height: 32, rx: 4, fill: '#4A3372' }, a), 2.6);
-    A.S('path', { d: 'M20,15 L44,15 M32,15 L32,27 M44,27 L64,27 M44,5 L44,17',
-      stroke: '#241534', 'stroke-width': 3, 'stroke-linecap': 'round', fill: 'none' }, a);
-    A.S('circle', { cx: 26, cy: 10, r: 3.6, fill: '#C9BFD6' }, a);
-    A.S('circle', { cx: 58, cy: 33, r: 4, fill: '#FFD84A' }, a);
-
-    a = document.getElementById('ic-untangle'); A.clear(a);
-    var up = [[22, 8], [62, 10], [26, 34], [60, 32]];
-    var ue = [[0, 3], [1, 2], [0, 1], [2, 3]];
-    for (i = 0; i < ue.length; i++) {
-      A.ink(A.S('line', { x1: up[ue[i][0]][0], y1: up[ue[i][0]][1],
-        x2: up[ue[i][1]][0], y2: up[ue[i][1]][1] }, a), 2.6)
-        .setAttribute('stroke', i < 2 ? '#C74C6B' : '#241534');
-    }
-    for (i = 0; i < 4; i++) { A.ink(A.S('circle', { cx: up[i][0], cy: up[i][1], r: 6, fill: '#FFC93C' }, a), 2.4); }
-
-    a = document.getElementById('ic-which'); A.clear(a);
-    for (i = 0; i < 3; i++) {
-      var mid = (i === 1), f = mid ? 1 : -1;
-      A.ink(A.S('path', { d: 'M-9,-4 L2,-4 L2,-9 L11,0 L2,9 L2,4 L-9,4 Z',
-        fill: mid ? '#FFC93C' : '#FFF6E6',
-        transform: 'translate(' + (22 + i * 20) + ',21) scale(' + f + ',1)' }, a), 2.4);
-    }
-
-    a = document.getElementById('ic-fill'); A.clear(a);
-    A.S('rect', { x: 20, y: 5, width: 44, height: 32, rx: 4, fill: '#241534', opacity: '.2' }, a);
-    var fp = [[0, 0, '#FF8A3D'], [1, 0, '#FF8A3D'], [2, 0, '#6EC6E8'],
-              [0, 1, '#3FBF7F'], [1, 1, '#6EC6E8'], [2, 1, '#6EC6E8']];
-    for (i = 0; i < fp.length; i++) {
-      A.ink(A.S('rect', { x: 22 + fp[i][0] * 14, y: 7 + fp[i][1] * 14, width: 13, height: 13, rx: 3,
-        fill: fp[i][2] }, a), 2.2);
-    }
-
-    /* --- v12 games --- */
-    a = document.getElementById('ic-cups'); A.clear(a);
-    for (i = 0; i < 3; i++) {
-      A.ink(A.S('path', { d: 'M' + (14 + i * 22) + ',34 L' + (18 + i * 22) + ',12 L' +
-        (34 + i * 22) + ',12 L' + (38 + i * 22) + ',34 Z', fill: '#F0466F' }, a), 2.4);
-    }
-    A.ink(A.S('circle', { cx: 42, cy: 8, r: 6, fill: '#FFC93C' }, a), 2.2);
-
-    a = document.getElementById('ic-follow'); A.clear(a);
-    var fq = [[14, 12, '#FFC93C'], [42, 8, '#8FA8C4'], [66, 18, '#FFC93C'],
-              [26, 32, '#8FA8C4'], [56, 34, '#8FA8C4']];
-    for (i = 0; i < fq.length; i++) {
-      A.ink(A.S('circle', { cx: fq[i][0], cy: fq[i][1], r: 7, fill: fq[i][2] }, a), 2.2);
-    }
-
-    a = document.getElementById('ic-howmany'); A.clear(a);
-    var hm = [[16, 12], [32, 9], [48, 14], [24, 28], [42, 30], [60, 24]];
-    for (i = 0; i < hm.length; i++) {
-      A.ink(A.S('circle', { cx: hm[i][0], cy: hm[i][1], r: 6, fill: '#F0466F' }, a), 2.2);
-    }
-    A.txt('?', { x: 72, y: 30, 'font-size': 22, fill: '#241534', opacity: '.5' }, a);
-
-    a = document.getElementById('ic-pile'); A.clear(a);
-    for (i = 0; i < 3; i++) {
-      A.ink(A.S('circle', { cx: 14 + (i % 2) * 16, cy: 12 + i * 11, r: 9, fill: '#6EC6E8' }, a), 2.2);
-    }
-    for (i = 0; i < 5; i++) {
-      A.ink(A.S('circle', { cx: 54 + (i % 3) * 11, cy: 11 + Math.floor(i / 3) * 13, r: 5.5,
-        fill: '#FFC93C' }, a), 2 );
-    }
-
-    a = document.getElementById('ic-colour'); A.clear(a);
-    A.ink(A.S('rect', { x: 8, y: 8, width: 68, height: 26, rx: 6, fill: '#FFF6E6' }, a), 2.4);
-    A.txt('RED', { x: 42, y: 29, 'font-size': 19, fill: '#6EC6E8' }, a);
-
-    a = document.getElementById('ic-opp'); A.clear(a);
-    A.ink(A.S('ellipse', { cx: 22, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
-    A.ink(A.S('ellipse', { cx: 62, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
-    A.ink(A.S('circle', { cx: 22, cy: 18, r: 8, fill: '#F3E4C6' }, a), 2.4);
-    A.ink(A.S('path', { d: 'M40,14 L58,14 M52,9 L58,14 L52,19', fill: 'none' }, a), 3)
-      .setAttribute('stroke', '#3FBF7F');
   }
 
   /* ---------- the play log, for a grown-up ----------
      Hold the title on the home screen for three seconds. Deliberately plain:
      if she ever finds it, it should look like a boring wall of numbers. */
-  function ms2s(m) { return m ? (Math.round(m / 100) / 10) + 's' : '\u2013'; }
+  function ms2s(m) { return m ? (Math.round(m / 100) / 10) + 's' : '–'; }
+  function effort(s) { return (s.n + s.h * 3 + s.t * 6 + s.q * 4) / Math.max(1, s.o); }
 
   function paintStats() {
     var body = document.getElementById('stats-body');
     var rows = [], i, s, k;
     for (i = 0; i < PUZZLES.length; i++) {
-      s = stats[String(i)];
+      s = stats[pid(PUZZLES[i])];
       if (s && s.o) { rows.push({ i: i, s: s }); }
     }
 
@@ -629,6 +701,25 @@ var BS = (function () {
       head += '</p>';
     }
 
+    /* Is the ladder in the right order FOR HER? A puzzle that cost far more
+       effort than the ones after it is sitting too early. This is the evidence
+       to re-order by: change that puzzle's `d` and nothing else. */
+    var early = [];
+    for (i = 0; i < rows.length; i++) {
+      var later5 = [], j;
+      for (j = i + 1; j < rows.length && later5.length < 5; j++) { later5.push(effort(rows[j].s)); }
+      if (later5.length < 3) { continue; }
+      later5.sort(function (a, b) { return a - b; });
+      var med = later5[Math.floor(later5.length / 2)], mine = effort(rows[i].s);
+      if (mine >= 3 && mine > med * 2.5) { early.push({ i: rows[i].i, w: mine }); }
+    }
+    early.sort(function (a, b) { return b.w - a.w; });
+    if (early.length) {
+      head += '<p class="st-sum">Harder than their place: ';
+      for (i = 0; i < Math.min(6, early.length); i++) { head += (i ? ', ' : '') + '#' + (early[i].i + 1); }
+      head += '</p>';
+    }
+
     if (!rows.length) {
       body.innerHTML = head + '<p class="st-sum">Nothing played yet.</p>';
       return;
@@ -639,42 +730,55 @@ var BS = (function () {
     for (i = 0; i < rows.length; i++) {
       s = rows[i].s; k = rows[i].i;
       t += '<tr class="' + (isDone(k) ? 'ok' : 'no') + '">' +
-           '<td>' + (k + 1) + (isDone(k) ? '\u2713' : '') + '</td>' +
+           '<td>' + (k + 1) + (isDone(k) ? '✓' : '') + '</td>' +
            '<td>' + s.o + '</td><td>' + s.n + '</td><td>' + s.h + '</td>' +
-           '<td>' + s.t + '</td><td>' + s.q + '</td><td>' + ms2s(s.ms) + '</td></tr>';
+           '<td>' + s.t + '</td><td>' + s.q + '</td><td>' + ms2s(s.ms) + '</td></tr>' +
+           '<tr class="q"><td colspan="7">' + String(PUZZLES[k].ask).slice(0, 46) + '</td></tr>';
     }
     body.innerHTML = head + t + '</table>';
   }
 
-  function paintSubs() {
-    function set(id, v) { var e = document.getElementById(id); if (e) { e.textContent = v; } }
-    function num(key, one, many, dflt) {
-      var v = load(key, 0);
-      return v ? ('Best ' + v + ' ' + (v === 1 ? one : many)) : dflt;
+  /* ---------- old saves ---------- */
+  function migrate() {
+    var mk, oi;
+    doneMap = load('bs.doneIds', null);
+    if (!doneMap || typeof doneMap !== 'object') {
+      /* v6 stored a high-water count in bs.solved; v7 an index map in bs.done.
+         Both refer to the 56-puzzle order that existed before the v8 ramp. */
+      doneMap = {};
+      var old = load('bs.done', null);
+      if (!old || typeof old !== 'object') {
+        old = {};
+        var hw = load('bs.solved', 0);
+        if (typeof hw !== 'number' || hw < 0) { hw = 0; }
+        if (hw > 56) { hw = 56; }
+        for (var mi = 0; mi < hw; mi++) { old[mi] = 1; }
+      }
+      for (mk in old) {
+        if (!old.hasOwnProperty(mk) || old[mk] !== 1) { continue; }
+        oi = parseInt(mk, 10);
+        if (isNaN(oi) || oi < 0 || oi > 55) { continue; }
+        /* v8: 2 puzzles inserted before old #36, 2 more before old #37 */
+        var ni = oi >= 36 ? oi + 4 : (oi >= 35 ? oi + 2 : oi);
+        if (LEGACY[ni]) { doneMap[LEGACY[ni]] = 1; }
+      }
+      save('bs.doneIds', doneMap);
     }
-    var nd = doneCount();
-    set('sub-tricks', nd ? (nd + ' of ' + PUZZLES.length + ' solved') : (PUZZLES.length + ' puzzles'));
-    var bp = load('bs.pairs.medium', null);
-    set('sub-pairs', bp ? ('Best ' + bp + ' moves') : 'Match the faces');
-    set('sub-odd',   num('bs.oddBest', 'in a row', 'in a row', 'Spot it fast'));
-    set('sub-echo',  num('bs.echoBest', 'round', 'rounds', 'Repeat it back'));
-    set('sub-spot',  num('bs.spotBest', 'picture', 'pictures', 'Find the changes'));
-    var bl = load('bs.slideBest', null);
-    set('sub-slide', bl ? ('Best ' + bl + ' moves') : 'Put it in order');
-    set('sub-snap',  num('bs.snapBest', 'round', 'rounds', 'Remember where'));
-    set('sub-trail', num('bs.trailBest', 'trail', 'trails', '1, A, 2, B...'));
-    set('sub-wake',  num('bs.wakeBest', 'right', 'right', "Don't tap sleepers"));
-    set('sub-sort',  num('bs.sortBest', 'sorted', 'sorted', 'The rule changes'));
-    set('sub-maze',  num('bs.mazeBest', 'maze', 'mazes', 'Find the way out'));
-    set('sub-untangle', num('bs.untangleBest', 'board', 'boards', 'No crossed lines'));
-    set('sub-which', num('bs.whichBest', 'right', 'right', 'Ignore the others'));
-    set('sub-fill',  num('bs.fillBest', 'board', 'boards', 'Cover every square'));
-    set('sub-cups',  num('bs.cupsBest', 'found', 'found', 'Where is the ball?'));
-    set('sub-follow', num('bs.followBest', 'round', 'rounds', 'Keep your eye on them'));
-    set('sub-howmany', num('bs.howmanyBest', 'right', 'right', 'A quick look'));
-    set('sub-pile',  num('bs.pileBest', 'right', 'right', 'More, not bigger'));
-    set('sub-colour', num('bs.colourBest', 'right', 'right', 'Ignore the word'));
-    set('sub-opp',   num('bs.oppBest', 'right', 'right', 'Tap the other one'));
+
+    stats = load('bs.log', null);
+    if (!stats || typeof stats !== 'object') {
+      stats = {};
+      var os = load('bs.stats', null);
+      if (os && typeof os === 'object') {
+        for (mk in os) {
+          if (!os.hasOwnProperty(mk)) { continue; }
+          oi = parseInt(mk, 10);
+          if (!isNaN(oi) && LEGACY[oi] && os[mk] && typeof os[mk] === 'object') { stats[LEGACY[oi]] = os[mk]; }
+        }
+        save('bs.log', stats);
+        try { localStorage.removeItem('bs.stats'); } catch (e) {}
+      }
+    }
   }
 
   /* ---------- boot ---------- */
@@ -686,39 +790,15 @@ var BS = (function () {
     askEl = document.getElementById('ask');
     toastEl = document.getElementById('toast');
 
+    sortPuzzles();
     muted = load('bs.muted', false);
-    stats = load('bs.stats', null);
-    if (!stats || typeof stats !== 'object') { stats = {}; }
-
-    /* One-off migration to id-keyed progress. v6 stored a high-water count in
-       bs.solved; v7 stored an index map in bs.done. Both refer to the 56-puzzle
-       order, so old indices are shifted past the four ramp puzzles first. */
-    doneMap = load('bs.doneIds', null);
-    if (!doneMap || typeof doneMap !== 'object') {
-      doneMap = {};
-      var old = load('bs.done', null), mk;
-      if (!old || typeof old !== 'object') {
-        old = {};
-        var hw = load('bs.solved', 0);
-        if (typeof hw !== 'number' || hw < 0) { hw = 0; }
-        if (hw > 56) { hw = 56; }
-        for (var mi = 0; mi < hw; mi++) { old[mi] = 1; }
-      }
-      for (mk in old) {
-        if (!old.hasOwnProperty(mk) || old[mk] !== 1) { continue; }
-        var oi = parseInt(mk, 10);
-        if (isNaN(oi) || oi < 0 || oi > 55) { continue; }
-        /* v8: 2 puzzles inserted before old #36, 2 more before old #37 */
-        var ni = oi >= 36 ? oi + 4 : (oi >= 35 ? oi + 2 : oi);
-        if (PUZZLES[ni]) { doneMap[pid(PUZZLES[ni])] = 1; }
-      }
-      save('bs.doneIds', doneMap);
-    }
+    migrate();
 
     function fit() { document.body.style.height = window.innerHeight + 'px'; }
     fit();
     window.addEventListener('resize', fit, false);
     window.addEventListener('orientationchange', function () { setTimeout(fit, 320); }, false);
+    window.addEventListener('pagehide', flushStats, false);
 
     var i, svgs = [stage, arena];
     for (i = 0; i < svgs.length; i++) {
@@ -728,16 +808,7 @@ var BS = (function () {
       svgs[i].addEventListener('touchcancel', scanTouches, false);
     }
 
-    var cards = document.querySelectorAll('.card');
-    for (i = 0; i < cards.length; i++) {
-      (function (b) {
-        b.addEventListener('click', function () {
-          ac(); SFX.tap();
-          var k = b.getAttribute('data-go');
-          if (k === 'tricks') { goGrid(); } else { startMode(k); }
-        }, false);
-      })(cards[i]);
-    }
+    buildHome();
 
     document.getElementById('grid-back').addEventListener('click', goHome, false);
     document.getElementById('ar-back').addEventListener('click', goHome, false);
@@ -746,7 +817,7 @@ var BS = (function () {
     document.getElementById('win-menu').addEventListener('click', goGrid, false);
     document.getElementById('next').addEventListener('click', function () { SFX.tap(); openPuzzle(cur + 1); }, false);
     document.getElementById('ao-again').addEventListener('click', function () {
-      SFX.tap(); var k = liveMode; startMode(k);
+      SFX.tap(); var k = liveMode; if (k) { startMode(k); }
     }, false);
 
     document.getElementById('bulb').addEventListener('click', function () {
@@ -768,25 +839,26 @@ var BS = (function () {
     function toggleMute() {
       muted = !muted; save('bs.muted', muted);
       document.getElementById('mute-1').textContent = muted ? 'Sound off' : 'Sound on';
-      document.getElementById('mute-2').innerHTML = muted ? '&#9834;\u0338' : '&#9834;';
+      document.getElementById('mute-2').innerHTML = muted ? '&#9834;̸' : '&#9834;';
       if (!muted) { ac(); SFX.tap(); }
     }
     document.getElementById('mute-1').addEventListener('click', toggleMute, false);
     document.getElementById('mute-2').addEventListener('click', toggleMute, false);
     document.getElementById('mute-1').textContent = muted ? 'Sound off' : 'Sound on';
+    if (muted) { document.getElementById('mute-2').innerHTML = '&#9834;̸'; }
 
     document.getElementById('wipe').addEventListener('click', function () {
       doneMap = {}; stats = {};
-      var keys = ['bs.solved', 'bs.done', 'bs.doneIds', 'bs.stats',
-                  'bs.oddBest', 'bs.echoBest', 'bs.spotBest', 'bs.slideBest',
-                  'bs.snapBest', 'bs.trailBest', 'bs.wakeBest', 'bs.sortBest', 'bs.mazeBest',
-                  'bs.untangleBest', 'bs.whichBest', 'bs.fillBest',
-                  'bs.pairs.easy', 'bs.pairs.medium', 'bs.pairs.hard', 'bs.pairsBest', 'bs.pairsLevel',
-                  'bs.slide.easy', 'bs.slide.medium', 'bs.slide.hard', 'bs.slideLevel'];
-      for (var w = 0; w < keys.length; w++) { try { localStorage.removeItem(keys[w]); } catch (e) {} }
-      SFX.tap(); paintSubs();
-      var w = document.getElementById('wipe');
-      w.textContent = 'Cleared'; setTimeout(function () { w.textContent = 'Start over'; }, 1200);
+      if (statTimer) { clearTimeout(statTimer); statTimer = null; }
+      var keys = ['bs.solved', 'bs.done', 'bs.doneIds', 'bs.stats', 'bs.log'], w, k, list;
+      for (w = 0; w < modeOrder.length; w++) {
+        list = modes[modeOrder[w]].keys || [];
+        for (k = 0; k < list.length; k++) { keys.push(list[k]); }
+      }
+      for (w = 0; w < keys.length; w++) { try { localStorage.removeItem(keys[w]); } catch (e) {} }
+      SFX.tap(); paintSubs(); drawMascot();
+      var wb = document.getElementById('wipe');
+      wb.textContent = 'Cleared'; setTimeout(function () { wb.textContent = 'Start over'; }, 1200);
     }, false);
 
     /* hold the title for three seconds -> the play log */
@@ -812,12 +884,12 @@ var BS = (function () {
       document.getElementById('stats').className = 'sheet';
     }, false);
     document.getElementById('stats-clear').addEventListener('click', function () {
-      stats = {}; saveStats(); paintStats();
+      stats = {}; flushStats(); paintStats();
     }, false);
 
     document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, false);
 
-    drawHomeArt(); paintSubs();
+    drawMascot(); paintSubs();
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
@@ -827,10 +899,11 @@ var BS = (function () {
   }
 
   return {
-    boot: boot, registerMode: registerMode,
+    boot: boot, registerMode: registerMode, addPuzzles: addPuzzles,
     tap: tap, drag: drag, glide: glide, holdZone: holdZone, setCheck: setCheck,
-    win: win, nope: nope, chips: chips, wobble: wobble, confetti: confetti,
-    SFX: SFX, load: load, save: save,
+    win: win, nope: nope, chips: chips, wobble: wobble, confetti: confetti, later: later,
+    SFX: SFX, load: load, save: save, best: best,
+    chapters: CHAPTERS, chapOf: chapOf, pid: pid,
     lock: function (v) { locked = v; }, isLocked: function () { return locked; }
   };
 })();

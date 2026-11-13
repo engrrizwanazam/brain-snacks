@@ -162,6 +162,15 @@
   }
 
   BS.registerMode('maze', {
+    name: 'Maze', shelf: 'think', color: '#FF9E7A', shade: '#C46F52',
+    keys: ['bs.mazeBest'], best: ['bs.mazeBest', 'maze', 'mazes'], blurb: 'Find the way out',
+    icon: function (a) {
+      ART.ink(ART.S('rect', { x: 20, y: 5, width: 44, height: 32, rx: 4, fill: '#4A3372' }, a), 2.6);
+      ART.S('path', { d: 'M20,15 L44,15 M32,15 L32,27 M44,27 L64,27 M44,5 L44,17',
+        stroke: '#241534', 'stroke-width': 3, 'stroke-linecap': 'round', fill: 'none' }, a);
+      ART.S('circle', { cx: 26, cy: 10, r: 3.6, fill: '#C9BFD6' }, a);
+      ART.S('circle', { cx: 58, cy: 33, r: 4, fill: '#FFD84A' }, a);
+    },
     start: function (a) {
       api = a;
       clearTimers();

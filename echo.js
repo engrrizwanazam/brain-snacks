@@ -110,6 +110,20 @@
   }
 
   BS.registerMode('echo', {
+    name: 'Echo', shelf: 'memory', color: '#3FBF7F', shade: '#2A8E5C',
+    keys: ['bs.echoBest'], best: ['bs.echoBest', 'round', 'rounds'], blurb: 'Repeat it back',
+    icon: function (a) {
+      var ec = ['#F0466F', '#6EC6E8', '#FFC93C', '#FFF6E6'], i, lit;
+      for (i = 0; i < 4; i++) {
+        lit = (i === 1);
+        ART.ink(ART.S('rect', { x: 22 + (i % 2) * 22, y: 4 + Math.floor(i / 2) * 21, width: 19, height: 18, rx: 5,
+          fill: lit ? ec[i] : ART.tint(ec[i], -46) }, a), 3);
+        if (lit) {
+          ART.S('rect', { x: 20 + (i % 2) * 22, y: 2 + Math.floor(i / 2) * 21, width: 23, height: 22, rx: 7, fill: ec[i], opacity: '.4' }, a);
+          ART.S('rect', { x: 26 + (i % 2) * 22, y: 8 + Math.floor(i / 2) * 21, width: 7, height: 4, rx: 2, fill: '#FFFFFF', opacity: '.5' }, a);
+        }
+      }
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Echo');

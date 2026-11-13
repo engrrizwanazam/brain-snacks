@@ -139,6 +139,14 @@
   }
 
   BS.registerMode('odd', {
+    name: 'Odd One', shelf: 'quick', color: '#FF8A3D', shade: '#C4652A',
+    keys: ['bs.oddBest'], best: ['bs.oddBest', 'in a row', 'in a row'], blurb: 'Spot it fast',
+    icon: function (a) {
+      ART.critter(a, { x: 24, y: 13, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false, blink: false });
+      ART.critter(a, { x: 60, y: 13, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false, blink: false });
+      ART.critter(a, { x: 24, y: 35, size: 9, fill: '#FFF6E6', ears: 'round', shadow: false, bob: false, blink: false });
+      ART.critter(a, { x: 60, y: 35, size: 9, fill: '#3FBF7F', ears: 'round', mood: 'wow', shadow: false, bob: false, blink: false });
+    },
     start: function (a) {
       api = a;
       clearTimers();

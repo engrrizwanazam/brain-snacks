@@ -141,6 +141,16 @@
   }
 
   BS.registerMode('snap', {
+    name: 'Snapshot', shelf: 'memory', color: '#5FD3C0', shade: '#3E9E8F',
+    keys: ['bs.snapBest'], best: ['bs.snapBest', 'round', 'rounds'], blurb: 'Remember where',
+    icon: function (a) {
+      for (var i = 0; i < 6; i++) {
+        var lit2 = (i === 1 || i === 4);
+        ART.ink(ART.S('rect', { x: 21 + (i % 3) * 15, y: 6 + Math.floor(i / 3) * 15,
+          width: 13, height: 13, rx: 3.5, fill: lit2 ? '#FFF6E6' : '#241534' }, a), 2.4);
+        if (lit2) { ART.S('circle', { cx: 27.5 + (i % 3) * 15, cy: 12.5 + Math.floor(i / 3) * 15, r: 3.4, fill: '#F0466F' }, a); }
+      }
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Snapshot');

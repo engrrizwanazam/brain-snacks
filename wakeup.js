@@ -129,6 +129,13 @@
   }
 
   BS.registerMode('wake', {
+    name: 'Wake Up', shelf: 'quick', color: '#8FA8F0', shade: '#6579BC',
+    keys: ['bs.wakeBest'], best: ['bs.wakeBest', 'right', 'right'], blurb: "Don't tap sleepers",
+    icon: function (a) {
+      ART.critter(a, { x: 30, y: 22, size: 12, fill: '#FFC93C', ears: 'round', shadow: false, bob: false, blink: false });
+      ART.critter(a, { x: 58, y: 22, size: 12, fill: '#8C86A8', ears: 'round', mood: 'sleep', shadow: false, bob: false, blink: false });
+      ART.txt('z', { x: 73, y: 12, 'font-size': 11, fill: '#241534', opacity: '.6' }, a);
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Wake Up');

@@ -107,6 +107,15 @@
   }
 
   BS.registerMode('which', {
+    name: 'Which Way', shelf: 'quick', color: '#FFB0C8', shade: '#C97E96',
+    keys: ['bs.whichBest'], best: ['bs.whichBest', 'right', 'right'], blurb: 'Ignore the others',
+    icon: function (a) {
+      for (var i = 0; i < 3; i++) {
+        var mid = (i === 1), f = mid ? 1 : -1;
+        ART.ink(ART.S('path', { d: 'M-9,-4 L2,-4 L2,-9 L11,0 L2,9 L2,4 L-9,4 Z', fill: mid ? '#FFC93C' : '#FFF6E6',
+          transform: 'translate(' + (22 + i * 20) + ',21) scale(' + f + ',1)' }, a), 2.4);
+      }
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Which Way');

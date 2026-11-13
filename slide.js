@@ -83,8 +83,14 @@
         S('rect', { x: -w / 2 + 9, y: -w / 2 + 9, width: w * .4, height: 9, rx: 5,
           fill: '#FFFFFF', opacity: '.28' }, g);
         txt(String(v + 1), { x: 0, y: w * .17, 'font-size': w * .46, fill: '#241534' }, g);
-        tiles[pos] = { g: g, cw: cw, ch: ch, offX: offX, padY: padY, w: w };
-        BS.tap(g, function () { move(pos); });
+        /* Each tile carries its CURRENT square. The handler used to close over
+           the square the tile was dealt on, so a tile that had moved once sent
+           its old position on every later tap: it either refused to move or
+           wobbled some other tile. No board needing a tile to move twice --
+           which is every board -- could be finished. */
+        var T = { g: g, cw: cw, ch: ch, offX: offX, padY: padY, w: w, pos: pos };
+        tiles[pos] = T;
+        BS.tap(g, function () { move(T.pos); });
       })(pos);
     }
   }
@@ -99,11 +105,12 @@
 
   function move(pos) {
     if (done) { return; }
+    if (!tiles[pos]) { return; }
     if (neighbours(gap).indexOf(pos) === -1) { api.SFX.bad(); BS.wobble(tiles[pos].g); return; }
     var t = tiles[pos];
     board[gap] = board[pos];
     board[pos] = board.length - 1;
-    tiles[gap] = t; tiles[pos] = null;
+    tiles[gap] = t; tiles[pos] = null; t.pos = gap;
     var to = centreOf(gap);
     BS.glide(t.g, to.x, to.y, 150);
     gap = pos;
@@ -153,6 +160,20 @@
   }
 
   BS.registerMode('slide', {
+    name: 'Slide', shelf: 'think', color: '#B58BF0', shade: '#8560BC',
+    keys: ['bs.slideBest', 'bs.slide.easy', 'bs.slide.medium', 'bs.slide.hard', 'bs.slideLevel'],
+    sub: function (load) { var b = load('bs.slideBest', null); return b ? ('Best ' + b + ' moves') : 'Put it in order'; },
+    icon: function (a) {
+      var sc = ['#FF8A3D', '#6EC6E8', '#3FBF7F', '#FFC93C', '#F0466F'], i, tx, ty;
+      ART.S('rect', { x: 19, y: 6, width: 47, height: 32, rx: 6, fill: '#241534', opacity: '.16' }, a);
+      for (i = 0; i < 5; i++) {
+        tx = 21 + (i % 3) * 15; ty = 8 + Math.floor(i / 3) * 15;
+        ART.ink(ART.S('rect', { x: tx, y: ty, width: 13, height: 13, rx: 3.5, fill: ART.bodyFill(a, sc[i]) }, a), 2.6);
+        ART.S('rect', { x: tx + 2.5, y: ty + 2.5, width: 5, height: 2.5, rx: 1.2, fill: '#FFFFFF', opacity: '.35' }, a);
+      }
+      ART.S('path', { d: 'M56,28 l7,0 M60,25 l4,3 l-4,3', fill: 'none', stroke: '#241534',
+        'stroke-width': 2.4, 'stroke-linecap': 'round', opacity: '.5' }, a);
+    },
     start: function (a) {
       api = a;
       clearTimers();

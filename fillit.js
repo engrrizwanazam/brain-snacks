@@ -67,9 +67,31 @@
     A.clear(api.arena);
     S('rect', { x: 0, y: 0, width: 360, height: 420, fill: A.vgrad(api.arena, '#3B2757', '#2B1B3F') }, api.arena);
 
-    /* the third term keeps the total piece area small enough that the
-       tray can lay them out side by side without overlapping */
-    u = Math.min(300 / cols, 190 / rows, Math.sqrt(30000 / (cols * rows)));
+    /* The square size is whatever lets the board AND the tray both fit. It
+       used to be a guess from the board area, and a guess is not a
+       measurement: on a 4 x 3 board a second tray row of tall pieces ran 26
+       units off the bottom of the arena, where it could not be picked up.
+       So lay the tray out for real, and shrink until it fits. */
+    var dims = [], gi, gk, mnx, mny, mxx, mxy;
+    for (gi = 0; gi < groups.length; gi++) {
+      mnx = 99; mny = 99; mxx = -1; mxy = -1;
+      for (gk = 0; gk < groups[gi].length; gk++) {
+        mnx = Math.min(mnx, groups[gi][gk] % cols); mxx = Math.max(mxx, groups[gi][gk] % cols);
+        mny = Math.min(mny, Math.floor(groups[gi][gk] / cols)); mxy = Math.max(mxy, Math.floor(groups[gi][gk] / cols));
+      }
+      dims.push([mxx - mnx + 1, mxy - mny + 1]);
+    }
+    function trayBottom(uu) {
+      var x = 10, y = 14 + uu * rows + 22, rowH = 0, q;
+      for (q = 0; q < dims.length; q++) {
+        if (x + dims[q][0] * uu > 352) { x = 10; y += rowH + 10; rowH = 0; }
+        x += dims[q][0] * uu + 10;
+        rowH = Math.max(rowH, dims[q][1] * uu);
+      }
+      return y + rowH;
+    }
+    u = Math.floor(Math.min(300 / cols, 190 / rows, Math.sqrt(30000 / (cols * rows))));
+    while (u > 22 && trayBottom(u) > 412) { u--; }
     ox = (360 - u * cols) / 2;
     oy = 14;
 
@@ -186,6 +208,15 @@
   }
 
   BS.registerMode('fill', {
+    name: 'Fill It', shelf: 'think', color: '#C9B4F5', shade: '#9585C0',
+    keys: ['bs.fillBest'], best: ['bs.fillBest', 'board', 'boards'], blurb: 'Cover every square',
+    icon: function (a) {
+      ART.S('rect', { x: 20, y: 5, width: 44, height: 32, rx: 4, fill: '#241534', opacity: '.2' }, a);
+      var fp = [[0, 0, '#FF8A3D'], [1, 0, '#FF8A3D'], [2, 0, '#6EC6E8'], [0, 1, '#3FBF7F'], [1, 1, '#6EC6E8'], [2, 1, '#6EC6E8']];
+      for (var i = 0; i < fp.length; i++) {
+        ART.ink(ART.S('rect', { x: 22 + fp[i][0] * 14, y: 7 + fp[i][1] * 14, width: 13, height: 13, rx: 3, fill: fp[i][2] }, a), 2.2);
+      }
+    },
     start: function (a) {
       api = a;
       clearTimers();

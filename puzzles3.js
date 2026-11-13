@@ -1,32 +1,29 @@
 /* ==========================================================
-   Brain Snacks — puzzles 33-56. A serious step up.
-   Multi-step state puzzles (Hanoi, river crossing, water jugs),
-   abstract reasoning (matrices, analogies), and real deduction.
+   Brain Snacks — pack 3: multi-step state puzzles (Hanoi, river
+   crossing, water jugs), abstract reasoning (matrices, analogies)
+   and real deduction.
    ========================================================== */
 
-var PUZZLES_EXPERT = (function () {
+BS.addPuzzles((function () {
   'use strict';
 
   var A = ART;
   var S = A.S, G = A.G, ink = A.ink, txt = A.txt, place = A.place;
   var animal = A.animal, star = A.star, scene = A.scene, critter = A.critter;
   var tap = BS.tap, drag = BS.drag, glide = BS.glide;
+  var hit = KIT.hit, pad = KIT.pad, glyph = KIT.glyph, frame = KIT.frame, options = KIT.options;
 
-  function pad(g, w, h, dy) {
-    return S('rect', { x: -w / 2, y: -h / 2 + (dy || 0), width: w, height: h, rx: 10,
-      fill: '#FFFFFF', opacity: '0', 'pointer-events': 'all' }, g);
-  }
   /* A corn cob: fat yellow ellipse, rows of kernels, two husk leaves.
      The old one was a plain yellow blob with a leaf and read as a mango. */
   function cob(parent, x, y) {
     var g = G(parent, x, y), r, k;
-    ink(S('path', { d: 'M-9,16 q-14,-6 -13,-22 q0,-9 4,-14 q10,10 12,26 Z', fill: '#4FBF7A' }, g), 3);
-    ink(S('path', { d: 'M9,16 q14,-6 13,-22 q0,-9 -4,-14 q-10,10 -12,26 Z', fill: '#5FD08A' }, g), 3);
-    ink(S('path', { d: 'M0,-22 q11,0 11,13 q0,17 -11,27 q-11,-10 -11,-27 q0,-13 11,-13 Z', fill: '#FFD84A' }, g), 3.5);
-    for (r = 0; r < 5; r++) {
+    ink(S('path', { d: 'M-15,2 q-13,-13 -8,-26 q13,3 17,17 Z', fill: '#4FBF7A' }, g), 3);
+    ink(S('path', { d: 'M15,2 q13,-13 8,-26 q-13,3 -17,17 Z', fill: '#5FD08A' }, g), 3);
+    ink(S('ellipse', { cx: 0, cy: 2, rx: 12, ry: 21, fill: '#FFD84A' }, g), 3.5);
+    for (r = 0; r < 6; r++) {
       for (k = 0; k < 3; k++) {
-        S('circle', { cx: -5 + k * 5 + (r % 2 ? 2.5 : 0), cy: -13 + r * 6,
-          r: 2, fill: '#E8A317', opacity: '.8' }, g);
+        S('circle', { cx: -6 + k * 6 + (r % 2 ? 3 : 0), cy: -13 + r * 6,
+          r: 2.1, fill: '#E8A317', opacity: '.75' }, g);
       }
     }
     return g;
@@ -97,14 +94,14 @@ var PUZZLES_EXPERT = (function () {
       for (j = 0; j < cargo.length; j++) { side[cargo[j]] = to; }
       boat = to;
       glide(boatG, to ? 224 : 136, 236, 420);
-      setTimeout(function () {
+      BS.later(function () {
         cargo = [];
         positions(true);
-        setTimeout(function () {
+        BS.later(function () {
           busy = false;
           if (cfg.unsafe && cfg.unsafe(farBank())) {
             BS.nope();
-            setTimeout(function () {
+            BS.later(function () {
               for (var q = 0; q < rows.length; q++) { side[rows[q].key] = 0; }
               boat = 0; cargo = [];
               glide(boatG, 136, 236, 300);
@@ -150,7 +147,7 @@ var PUZZLES_EXPERT = (function () {
         fills[k].setAttribute('y', jh[k] / 2 - 4 - h);
         labels[k].textContent = String(vol[k]);
       }
-      if (vol[0] === target || vol[1] === target) { setTimeout(BS.win, 400); }
+      if (vol[0] === target || vol[1] === target) { BS.later(BS.win, 400); }
     }
     function button(x, y, w, label, col, fn) {
       var g = G(st, x, y);
@@ -177,8 +174,7 @@ var PUZZLES_EXPERT = (function () {
   /* the cast of the river puzzles, shared so the ramp looks like the real one */
   var RIVER_ROWS = [
     { key: 'fox', y: 66, make: function (st) { return animal(st, { kind: 'fox', x: 46, y: 66, size: 14, fill: '#E8722F', bob: false }); } },
-    /* said "hen", drew a duck */
-    { key: 'hen', y: 150, make: function (st) { return animal(st, { kind: 'hen', x: 46, y: 150, size: 14, fill: '#F5E3B0', bob: false }); } },
+    { key: 'hen', y: 150, make: function (st) { return animal(st, { kind: 'hen', x: 46, y: 150, size: 15, fill: '#FFF0C0', bob: false }); } },
     { key: 'corn', y: 232, make: function (st) { return cob(st, 46, 232); } }
   ];
   function RIVER_UNSAFE(away) {
@@ -186,46 +182,11 @@ var PUZZLES_EXPERT = (function () {
     return onBank(away, 'fox') || onBank(away, 'corn');
   }
 
-  function hit(x, y, tx, ty, r) { return Math.abs(x - tx) < (r || 44) && Math.abs(y - ty) < (r || 44); }
-
-  /* a shape in one call — used constantly by the reasoning puzzles */
-  function glyph(parent, kind, size, fill, stroke) {
-    var e;
-    if (kind === 'circle') { e = S('circle', { cx: 0, cy: 0, r: size, fill: fill }, parent); }
-    else if (kind === 'square') { e = S('rect', { x: -size, y: -size, width: size * 2, height: size * 2, rx: size * .2, fill: fill }, parent); }
-    else if (kind === 'triangle') { e = S('path', { d: 'M0,' + (-size * 1.1) + ' L' + size + ',' + (size * .8) + ' L' + (-size) + ',' + (size * .8) + ' Z', fill: fill }, parent); }
-    else if (kind === 'diamond') { e = S('path', { d: 'M0,' + (-size * 1.15) + ' L' + size + ',0 L0,' + (size * 1.15) + ' L' + (-size) + ',0 Z', fill: fill }, parent); }
-    else if (kind === 'star') { return star(parent, 0, 0, size * 1.15, fill, stroke === 0 ? 0 : 3); }
-    else { e = S('ellipse', { cx: 0, cy: 0, rx: size * 1.15, ry: size * .72, fill: fill }, parent); }
-    if (stroke !== 0) { ink(e, stroke || 3); }
-    return e;
-  }
-
-  /* a framed cell for matrix puzzles */
-  function frame(parent, x, y, w, h, fill) {
-    var g = G(parent, x, y);
-    ink(S('rect', { x: -w / 2, y: -h / 2, width: w, height: h, rx: 9, fill: fill || '#FFF6E6' }, g), 3);
-    return g;
-  }
-
-  /* three tappable options along the bottom */
-  function options(st, y, draw, rightIndex, xs) {
-    xs = xs || [72, 180, 288];
-    for (var i = 0; i < xs.length; i++) {
-      (function (i) {
-        var g = G(st, xs[i], y);
-        pad(g, 92, 92);
-        ink(S('rect', { x: -40, y: -40, width: 80, height: 80, rx: 12, fill: '#FFF6E6' }, g), 3);
-        draw(g, i);
-        tap(g, function () { if (i === rightIndex) { BS.win(); } else { BS.nope(g); } });
-      })(i);
-    }
-  }
-
   return [
 
 /* 33 — Raven-style matrix: two rules at once */
 {
+  d: 59,
   ask: 'What belongs in the empty square?',
   hint: 'Read across: what changes? Now read down: what changes?',
   tell: 'Going across the shape changes, going down the colour changes. It needs a green star.',
@@ -258,6 +219,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 34 — number pyramid */
 {
+  d: 41,
   ask: 'Each brick is the two under it added together.',
   hint: 'The brick above 4 and 5 is 9. Work out the missing one the same way.',
   tell: 'It sits above 5 and 3, so it is 8.',
@@ -285,6 +247,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 35 — Tower of Hanoi, three discs */
 {
+  d: 68.5,
   ask: 'Move the whole stack to the last peg. Never put a big disc on a small one.',
   hint: 'Start by moving the smallest disc to the far peg, not the middle one.',
   tell: 'Small to peg 3, medium to peg 2, small onto medium, big to peg 3, then rebuild.',
@@ -346,255 +309,47 @@ var PUZZLES_EXPERT = (function () {
       sel = -1;
       BS.SFX.drop();
       layout(true);
-      if (pegs[2].length === 3) { setTimeout(BS.win, 420); }
+      if (pegs[2].length === 3) { BS.later(BS.win, 420); }
     }
   }
 },
 
-/* 36 — coins: reach an exact total, and take one back when you overshoot */
+/* 36 \u2014 river, but the boat holds two: which pair is safe? */
 {
-  ask: 'Pay exactly 8. Tap a coin to drop it in the purse. Tap it again to take it back.',
-  hint: 'Start with the biggest coin, then work out how much more you still need.',
-  tell: 'Drop in the 5, then a 2, then a 1. That makes exactly 8.',
-  why: 'There was only one way to make 8, and you had to take coins back out to find it.',
+  d: 57,
+  ask: 'Get all three across. The boat holds two. Alone, the fox eats the hen and the hen eats the corn.',
+  hint: 'Only one pair is safe to leave together. Who eats who?',
+  tell: 'Take the fox and the corn over together. Sail back empty. Then bring the hen.',
+  why: 'The fox has no interest in corn. Finding the safe pair beat trying pairs at random.',
   build: function (st) {
-    scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 272, vignette: false });
-    var vals = [5, 5, 2, 2, 1, 1], up = [], coins = [], i;
-    var homeX = [40, 96, 152, 208, 264, 320];   /* r=21, so 19..341 inside a 360 stage */
-    var HOME_Y = 236, PURSE_Y = 150;
-    ink(S('path', { d: 'M84,104 L276,104 L262,192 L98,192 Z', fill: '#B58BF0' }, st), 4);
-    var tot = txt('0', { x: 180, y: 82, 'font-size': 30, fill: '#241534' }, st);
-
-    function sum() {
-      var t = 0, j;
-      for (j = 0; j < 6; j++) { if (up[j]) { t += vals[j]; } }
-      return t;
-    }
-    function refresh() {
-      var t = sum();
-      tot.textContent = String(t);
-      if (t === 8) { setTimeout(BS.win, 380); }
-    }
-    for (i = 0; i < 6; i++) {
-      (function (i) {
-        var g = G(st, homeX[i], HOME_Y);
-        ink(S('circle', { cx: 0, cy: 0, r: 21, fill: '#FFC93C' }, g), 3.5);
-        S('circle', { cx: 0, cy: 0, r: 15, fill: '#FFDE7A' }, g);
-        txt(String(vals[i]), { x: 0, y: 7, 'font-size': 19, fill: '#241534' }, g);
-        pad(g, 50, 50);
-        up[i] = false; coins[i] = g;
-        tap(g, function () {
-          up[i] = !up[i];
-          glide(g, up[i] ? 112 + i * 27 : homeX[i], up[i] ? PURSE_Y : HOME_Y, 220);
-          BS.SFX.tap();
-          refresh();
-        });
-      })(i);
-    }
-    refresh();
+    ferry(st, { seats: 2, rows: RIVER_ROWS, unsafe: RIVER_UNSAFE });
   }
 },
 
-/* 37 — lamps: one tap changes three lights, so moves interfere */
+/* 37 \u2014 somebody has to bring the boat back */
 {
-  ask: 'Turn every lamp on. Tapping a lamp also changes the ones either side of it.',
-  hint: 'Tapping the middle of three dark lamps lights all three at once.',
-  tell: 'Tap the first lamp, then the third, then the fifth \u2014 the dark ones.',
-  why: 'Each tap changed three lamps at once, so you had to think about what a move breaks as well as what it fixes.',
+  d: 63,
+  ask: 'Get all three children across. Only Dad can row, and the boat holds Dad and one child.',
+  hint: 'Look at what happens after Dad drops a child off. Can the boat come back by itself?',
+  tell: 'Dad rows one child over, comes back alone, rows the next over, comes back, then rows the last.',
+  why: 'Dad went backwards three times, and every trip back was part of the plan, not a mistake.',
   build: function (st) {
-    scene(st, 'night', { hills: false, vignette: false });
-    var on = [false, true, false, true, false];
-    var bulbs = [], glows = [], i;
-    function paint() {
-      var lit = 0, j;
-      for (j = 0; j < 5; j++) {
-        bulbs[j].setAttribute('fill', on[j] ? '#FFDE7A' : '#4A3D75');
-        glows[j].setAttribute('opacity', on[j] ? '.30' : '0');
-        if (on[j]) { lit++; }
-      }
-      if (lit === 5) { setTimeout(BS.win, 400); }
-    }
-    for (i = 0; i < 5; i++) {
-      (function (i) {
-        var x = 48 + i * 66, g = G(st, x, 150);
-        ink(S('line', { x1: 0, y1: -104, x2: 0, y2: -34 }, g), 3).setAttribute('stroke', '#6E5EA8');
-        glows[i] = S('circle', { cx: 0, cy: 0, r: 40, fill: '#FFDE7A', opacity: '0' }, g);
-        bulbs[i] = ink(S('circle', { cx: 0, cy: 0, r: 22, fill: '#4A3D75' }, g), 3.5);
-        ink(S('rect', { x: -9, y: -38, width: 18, height: 12, rx: 3, fill: '#C0B4E0' }, g), 3);
-        pad(g, 62, 62);
-        tap(g, function () {
-          var j;
-          for (j = i - 1; j <= i + 1; j++) { if (j >= 0 && j < 5) { on[j] = !on[j]; } }
-          BS.SFX.tap(); paint();
-        });
-      })(i);
-    }
-    paint();
+    ferry(st, {
+      seats: 2,
+      rower: 'dad',
+      rows: [
+        { key: 'dad', y: 52, make: function (st) { return animal(st, { kind: 'bear', x: 46, y: 52, size: 17, fill: '#B58BF0', bob: false }); } },
+        { key: 'a', y: 120, make: function (st) { return animal(st, { kind: 'cat', x: 46, y: 120, size: 12, fill: '#FF8A3D', bob: false }); } },
+        { key: 'b', y: 182, make: function (st) { return animal(st, { kind: 'bunny', x: 46, y: 182, size: 12, fill: '#6EC6E8', bob: false }); } },
+        { key: 'c', y: 244, make: function (st) { return animal(st, { kind: 'mouse', x: 46, y: 244, size: 12, fill: '#3FBF7F', bob: false }); } }
+      ]
+    });
   }
 },
 
-/* 38 — stepping stones: hop one or two, never further */
+/* 38 — river crossing: the real one */
 {
-  ask: 'Hop the frog to the last stone. It can jump to the next stone, or over one \u2014 never further.',
-  hint: 'Some stones are too far apart to reach. Look at the gaps before you jump.',
-  tell: 'Hop to the 2nd stone, then over the gap, then next, then over the gap, then the last.',
-  why: 'You worked out the whole route before the first hop, because a wrong jump has nowhere to land.',
-  build: function (st) {
-    scene(st, 'water', { hills: false, ground: false, vignette: false });
-    S('rect', { x: 0, y: 96, width: 360, height: 128, fill: '#5FB6DE' }, st);
-    var i;
-    for (i = 0; i < 4; i++) {
-      ink(S('path', { d: 'M20,' + (116 + i * 30) + ' q16,-9 32,0 t32,0 t32,0 t32,0 t32,0 t32,0 t32,0 t32,0 t32,0', fill: 'none' }, st), 3)
-        .setAttribute('stroke', '#8FD3EF');
-    }
-    var HAS = [0, 1, 3, 4, 6, 7], at = 0, busy = false;
-    function px(i) { return 30 + i * 43; }
-    function py(i) { return 160 + (i % 2 ? 16 : -16); }
-    var pads = {};
-    for (i = 0; i < HAS.length; i++) {
-      (function (k) {
-        var g = G(st, px(k), py(k));
-        ink(S('ellipse', { cx: 0, cy: 0, rx: 22, ry: 15, fill: '#9E8A7A' }, g), 3.5);
-        S('ellipse', { cx: -4, cy: -4, rx: 11, ry: 6, fill: '#BCA895', opacity: '.7' }, g);
-        pad(g, 54, 46);
-        pads[k] = g;
-        tap(g, function () {
-          if (busy) { return; }
-          var step = k - at;
-          if (step !== 1 && step !== 2) { BS.nope(g); return; }
-          busy = true; at = k;
-          glide(frog, px(k), py(k) - 18, 240);
-          BS.SFX.grab();
-          setTimeout(function () {
-            busy = false;
-            if (at === 7) { BS.win(); }
-          }, 280);
-        });
-      })(HAS[i]);
-    }
-    /* was drawn as a green bunny while the question said frog */
-    var frog = animal(st, { kind: 'frog', x: px(0), y: py(0) - 18, size: 12, fill: '#3FBF7F', bob: false });
-    A.lift(st);
-  }
-},
-
-/* 39 — seat them by two rules at once */
-{
-  ask: 'Sit all three on the bench. The cat sits in the middle, and the mouse wants the seat by the window.',
-  hint: 'Only one seat is left once the cat and the mouse have theirs.',
-  tell: 'Dog on the left, cat in the middle, mouse on the right by the window.',
-  why: 'Two rules together left exactly one arrangement. You checked both at once instead of guessing.',
-  build: function (st) {
-    scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 276, vignette: false });
-    ink(S('rect', { x: 268, y: 26, width: 74, height: 74, rx: 8, fill: '#8FD3EF' }, st), 4);
-    ink(S('line', { x1: 305, y1: 26, x2: 305, y2: 100 }, st), 3);
-    var SX = [92, 180, 268], SY = 150, TY = 244;
-    var i;
-    for (i = 0; i < 3; i++) {
-      ink(S('rect', { x: SX[i] - 38, y: SY + 22, width: 76, height: 14, rx: 5, fill: '#C08D57' }, st), 3.5);
-    }
-    var who = ['dog', 'cat', 'mouse'];
-    var col = { dog: '#E8A33D', cat: '#FF8A3D', mouse: '#C9BFD6' };
-    var seat = [null, null, null], art = {}, home = {}, busy = false;
-    for (i = 0; i < 3; i++) {
-      (function (i) {
-        var k = who[i];
-        home[k] = SX[i];
-        art[k] = animal(st, { kind: k, x: SX[i], y: TY, size: 13, fill: col[k], bob: false });
-      })(i);
-    }
-    function seatOf(k) {
-      var j;
-      for (j = 0; j < 3; j++) { if (seat[j] === k) { return j; } }
-      return -1;
-    }
-    function check() {
-      if (seat[0] === 'dog' && seat[1] === 'cat' && seat[2] === 'mouse') { setTimeout(BS.win, 300); }
-    }
-    for (i = 0; i < 3; i++) {
-      (function (k) {
-        tap(art[k], function () {
-          if (busy) { return; }
-          var cur = seatOf(k), j;
-          if (cur >= 0) {                       /* already sitting: get up */
-            seat[cur] = null;
-            glide(art[k], home[k], TY, 240); BS.SFX.tap(); return;
-          }
-          for (j = 0; j < 3; j++) { if (!seat[j]) { break; } }
-          if (j > 2) { BS.nope(art[k]); return; }
-          seat[j] = k;
-          glide(art[k], SX[j], SY, 240); BS.SFX.grab();
-          setTimeout(check, 260);
-        });
-      })(who[i]);
-    }
-    for (i = 0; i < 3; i++) {
-      (function (j) {
-        var g = G(st, SX[j], SY);
-        pad(g, 72, 74);
-        tap(g, function () {
-          if (busy || seat[j]) { return; }
-          var k = null, m;
-          for (m = 0; m < 3; m++) { if (seatOf(who[m]) < 0) { k = who[m]; break; } }
-          if (!k) { return; }
-          seat[j] = k;
-          glide(art[k], SX[j], SY, 240); BS.SFX.grab();
-          setTimeout(check, 260);
-        });
-      })(i);
-    }
-    A.lift(st);
-  }
-},
-
-/* 40 — the lift: the only way up is to go down twice */
-{
-  ask: 'Ride the lift to floor 6. It only goes up 3 floors or down 2.',
-  hint: 'Floor 6 is not three above any floor you can reach going straight up. Try going down.',
-  tell: 'Up to 4, down to 2, up to 5, down to 3, then up to 6.',
-  why: 'You went downwards twice on purpose to get higher. Going the wrong way was the only way.',
-  build: function (st) {
-    scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 280, vignette: false });
-    /* Floor 1 used to sit at y=246, and the "Up 3" button rect runs from 252
-       to 288 across x=36..156 -- so the floor-1 number was 71% buried under
-       the button. The ladder is compressed to 36 units per floor, which
-       leaves the bottom number 10 units clear of the buttons. */
-    var FY = [0, 226, 190, 154, 118, 82, 46], at = 1, busy = false;
-    var i;
-    for (i = 1; i <= 6; i++) {
-      ink(S('line', { x1: 96, y1: FY[i] + 20, x2: 264, y2: FY[i] + 20 }, st), 3)
-        .setAttribute('stroke', '#C08D57');
-      txt(String(i), { x: 76, y: FY[i] + 12, 'font-size': 16, fill: '#241534', opacity: '.65' }, st);
-    }
-    ink(S('rect', { x: 264, y: 22, width: 4, height: 232, fill: '#C08D57' }, st), 0);
-    var car = G(st, 180, FY[1]);
-    ink(S('rect', { x: -34, y: -22, width: 68, height: 42, rx: 6, fill: '#6EC6E8' }, car), 4);
-    ink(S('line', { x1: 0, y1: -22, x2: 0, y2: 20 }, car), 3);
-    function button(x, label, col, d) {
-      var g = G(st, x, 270);
-      pad(g, 130, 44);
-      ink(S('rect', { x: -60, y: -18, width: 120, height: 36, rx: 9, fill: col }, g), 3.5);
-      txt(label, { x: 0, y: 6, 'font-size': 15, fill: '#241534' }, g);
-      tap(g, function () {
-        if (busy) { return; }
-        var n = at + d;
-        if (n < 1 || n > 6) { BS.nope(g); return; }
-        busy = true; at = n;
-        glide(car, 180, FY[n], 340); BS.SFX.drop();
-        setTimeout(function () {
-          busy = false;
-          if (at === 6) { BS.win(); }
-        }, 380);
-      });
-    }
-    button(96, 'Up 3', '#3FBF7F', 3);
-    button(258, 'Down 2', '#F0466F', -2);
-    A.lift(st);
-  }
-},
-
-/* 41 — river crossing: the real one */
-{
+  d: 73,
   ask: 'Get all three across. The boat holds one. Alone, the fox eats the hen and the hen eats the corn.',
   hint: 'The hen is the problem. She cannot be left with either of the others.',
   tell: 'Take the hen over, come back, take the fox, bring the hen BACK, take the corn, then fetch the hen.',
@@ -608,8 +363,30 @@ var PUZZLES_EXPERT = (function () {
   }
 },
 
-/* 42 — water jugs: the real one */
+/* 39 \u2014 jugs, the gentlest target: learn what pouring does */
 {
+  d: 67,
+  ask: 'Measure exactly 2 cups. You have a 5-cup jug and a 3-cup jug.',
+  hint: 'Fill the big jug right to the top, then tip it into the small one.',
+  tell: 'Fill 5, then pour 5 into 3. The small jug swallows 3 and stops, so 2 are left behind.',
+  why: 'Pouring stops the moment one jug empties or the other fills. That single rule is the whole toolkit.',
+  build: function (st) { jugGame(st, 5, 3, 2); }
+},
+
+/* 40 \u2014 jugs, two rounds instead of one */
+{
+  d: 77,
+  id: 'gttjfw',   /* keeps her solve: the question was reworded in v10 */
+  ask: 'Measure exactly 1 cup. You have a 5-cup jug and a 3-cup jug.',
+  hint: 'Start with the small jug this time. Get 3 into the big one, then see how much room is left.',
+  tell: 'Fill 3 and pour it into the 5. Fill 3 again and pour \u2014 the big jug only has room for 2, so 1 stays behind.',
+  why: 'You measured a cup you never poured. What stays behind counts as much as what moves.',
+  build: function (st) { jugGame(st, 5, 3, 1); }
+},
+
+/* 41 — water jugs: the real one */
+{
+  d: 89,
   ask: 'Measure exactly 4 cups. You only have a 5-cup jug and a 3-cup jug.',
   hint: 'Fill the big one, then use the small one to take exactly 3 away.',
   tell: 'Fill 5. Pour into 3, leaving 2. Empty the 3. Move the 2 across. Fill 5 again and top up the 3 \u2014 that takes 1, leaving 4.',
@@ -619,6 +396,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 38 — which net folds into the cube */
 {
+  d: 71,
   ask: 'Which one folds up into this box?',
   hint: 'A box has six faces. Count the squares first, then check they are not stacked in a line of five.',
   tell: 'The middle one — six squares in a cross shape.',
@@ -654,6 +432,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 39 — count the cubes, including hidden ones */
 {
+  d: 55,
   ask: 'How many blocks are in this stack?',
   hint: 'Some blocks are holding up the ones on top. You cannot see them, but they must be there.',
   tell: 'Six you can see, and one hidden underneath. Seven.',
@@ -675,14 +454,14 @@ var PUZZLES_EXPERT = (function () {
     cube(150, 172, T, L, R);
     cube(210, 172, T, L, R);
     cube(180, 128, T, L, R);
-    /* was y=288: inside the stage box's rounded corner and inset border */
-    txt('one block is hidden behind', { x: 180, y: 274, 'font-size': 12, fill: '#241534', opacity: '.5' }, st);
+    txt('one block is hidden behind', { x: 180, y: 288, 'font-size': 12, fill: '#241534', opacity: '.5' }, st);
     BS.chips(['6', '7', '8', '9'], 1);
   }
 },
 
 /* 40 — gear direction */
 {
+  d: 64,
   ask: 'The first gear turns this way. Which way does the last one turn?',
   hint: 'Gears that touch always turn opposite ways. Count along the chain.',
   tell: 'There are four gears, so the last one turns the opposite way — anticlockwise.',
@@ -704,26 +483,36 @@ var PUZZLES_EXPERT = (function () {
       ink(S('circle', { cx: 0, cy: 0, r: rs[i], fill: i === 3 ? '#FF8FA6' : '#B6A9CE' }, g), 4);
       ink(S('circle', { cx: 0, cy: 0, r: rs[i] * .3, fill: '#FFF6E6' }, g), 3);
     }
-    /* the arrow on gear 1 */
-    ink(S('path', { d: 'M64,72 a34,34 0 0 1 30,18', fill: 'none' }, st), 5).setAttribute('stroke', '#3FBF7F');
-    ink(S('path', { d: 'M92,84 L98,94 L86,95 Z', fill: '#3FBF7F' }, st), 2);
+    /* A curved arrow whose head really points the way it travels. The old
+       heads were plain triangles with the point at the top whichever way the
+       arc ran, so "this way" and "that way" looked almost the same. */
+    function turn(parent, cx, cy, r, a0, a1, cw, w) {
+      var d2r = Math.PI / 180, x0 = cx + r * Math.cos(a0 * d2r), y0 = cy + r * Math.sin(a0 * d2r);
+      var x1 = cx + r * Math.cos(a1 * d2r), y1 = cy + r * Math.sin(a1 * d2r);
+      var big = Math.abs(a1 - a0) > 180 ? 1 : 0;
+      ink(S('path', { d: 'M' + A.r2(x0) + ',' + A.r2(y0) + ' A' + r + ',' + r + ' 0 ' + big + ' ' + (cw ? 1 : 0) + ' ' + A.r2(x1) + ',' + A.r2(y1), fill: 'none' }, parent), w)
+        .setAttribute('stroke', '#3FBF7F');
+      var tx = (cw ? -1 : 1) * Math.sin(a1 * d2r), ty = (cw ? 1 : -1) * Math.cos(a1 * d2r), h = w * 2.1;
+      ink(S('path', { d: 'M' + A.r2(x1 + tx * h) + ',' + A.r2(y1 + ty * h) + ' L' + A.r2(x1 - ty * h * .8) + ',' + A.r2(y1 + tx * h * .8) +
+        ' L' + A.r2(x1 + ty * h * .8) + ',' + A.r2(y1 - tx * h * .8) + ' Z', fill: '#3FBF7F' }, parent), 2);
+    }
+    /* the arrow on gear 1: clockwise */
+    turn(st, 64, 128, 50, -120, -40, true, 5);
 
     options(st, 236, function (g, i) {
-      var cw = (i === 0);
       if (i === 2) {
         txt('?', { x: 0, y: 12, 'font-size': 34, fill: '#8A7BA8' }, g);
         return;
       }
-      ink(S('circle', { cx: 0, cy: 0, r: 24, fill: 'none' }, g), 5).setAttribute('stroke', '#3FBF7F');
-      var d = cw ? 'M22,-8 L28,4 L15,4 Z' : 'M-22,-8 L-28,4 L-15,4 Z';
-      ink(S('path', { d: d, fill: '#3FBF7F' }, g), 2);
-      txt(cw ? 'this way' : 'that way', { x: 0, y: 40, 'font-size': 11, fill: '#241534', opacity: '.6' }, g);
+      if (i === 0) { turn(g, 0, 0, 21, -200, 30, true, 5); }
+      else { turn(g, 0, 0, 21, 20, -210, false, 5); }
     }, 1);
   }
 },
 
 /* 41 — four-by-four sudoku with shapes */
 {
+  d: 64.5,
   ask: 'Every row and every column needs all four shapes, once each.',
   hint: 'Find a row that only has one empty square. That one is forced.',
   tell: 'Work out the forced squares first, then the rest follow.',
@@ -805,6 +594,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 42 — finish the symmetry */
 {
+  d: 49,
   ask: 'Make both halves match, like a mirror.',
   hint: 'The square nearest the line on the left needs a partner nearest the line on the right.',
   tell: 'Fill in the three squares that mirror the left-hand side.',
@@ -831,24 +621,22 @@ var PUZZLES_EXPERT = (function () {
           cells[r + ':' + c] = box;
           if (!isLeft) {
             tap(g, function () {
-              var key = r + ':' + c;
+              var key = r + ':' + c, k2, extra = 0;
               if (filled[key]) {
                 filled[key] = 0; box.setAttribute('fill', '#FFF6E6');
                 if (want[key]) { have--; }
                 BS.SFX.tap();
-                return;
+              } else {
+                filled[key] = 1; box.setAttribute('fill', '#FF8A3D');
+                BS.SFX.drop();
+                if (want[key]) { have++; } else { BS.nope(g); }
               }
-              filled[key] = 1; box.setAttribute('fill', '#FF8A3D');
-              BS.SFX.drop();
-              if (want[key]) {
-                have++;
-                if (have === need) {
-                  /* nothing extra painted? */
-                  var extra = 0, k2;
-                  for (k2 in filled) { if (filled.hasOwnProperty(k2) && filled[k2] && !want[k2]) { extra++; } }
-                  if (!extra) { setTimeout(BS.win, 320); }
-                }
-              } else { BS.nope(g); }
+              /* Checked after EVERY change. It used to be checked only when a
+                 correct square went on, so painting a wrong square, finishing
+                 the rest and then rubbing the wrong one out left a perfect
+                 mirror on screen that never won. */
+              for (k2 in filled) { if (filled.hasOwnProperty(k2) && filled[k2] && !want[k2]) { extra++; } }
+              if (have === need && !extra) { BS.later(BS.win, 320); }
             });
           }
         })(r, c);
@@ -860,6 +648,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 43 — logic deduction */
 {
+  d: 69,
   ask: 'Who owns the cat?',
   hint: 'Start with what you know for sure: Ali has the dog. So the cat is Sara or Bilal.',
   tell: 'Sara does not have the cat, and Ali has the dog. So it is Bilal.',
@@ -868,33 +657,18 @@ var PUZZLES_EXPERT = (function () {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
     var lines = ['Ali has the dog.', 'Sara does not have the cat.', 'One of them has the fish.'];
     for (var i = 0; i < 3; i++) {
-      var g = G(st, 180, 32 + i * 42);
-      ink(S('rect', { x: -158, y: -17, width: 316, height: 34, rx: 10, fill: '#FFF6E6' }, g), 3);
+      var g = G(st, 180, 40 + i * 44);
+      ink(S('rect', { x: -158, y: -18, width: 316, height: 36, rx: 10, fill: '#FFF6E6' }, g), 3);
       txt(lines[i], { x: 0, y: 6, 'font-size': 16, fill: '#241534' }, g);
-    }
-    /* The clues talk about a cat, a dog and a fish and the puzzle drew none of
-       them -- three identical blobs and three names. Show the three pets, so
-       the child can see what is being reasoned about. They are not tappable;
-       the answer is still a person. */
-    var pets = [
-      { kind: 'cat', fill: '#FFB03A' },
-      { kind: 'dog', fill: '#C9A46B' },
-      { kind: 'fish', fill: '#6EC6E8' }
-    ];
-    for (i = 0; i < 3; i++) {
-      var pg = G(st, 92 + i * 88, 172);
-      ink(S('rect', { x: -32, y: -28, width: 64, height: 54, rx: 10, fill: '#FFF6E6', opacity: '.6' }, pg), 2.4);
-      animal(pg, { kind: pets[i].kind, x: 0, y: pets[i].kind === 'fish' ? 0 : -9,
-        size: pets[i].kind === 'fish' ? 14 : 10, fill: pets[i].fill, bob: false, shadow: false });
     }
     var who = ['Ali', 'Sara', 'Bilal'];
     var cols = ['#6EC6E8', '#FF8FA6', '#3FBF7F'];
     for (i = 0; i < 3; i++) {
       (function (i) {
-        var g = G(st, 72 + i * 108, 240);
-        pad(g, 96, 84);
-        critter(g, { x: 0, y: -22, size: 16, fill: cols[i], ears: 'round', bob: false, shadow: false });
-        txt(who[i], { x: 0, y: 30, 'font-size': 17, fill: '#241534' }, g);
+        var g = G(st, 72 + i * 108, 214);
+        pad(g, 96, 132);
+        critter(g, { x: 0, y: -14, size: 26, fill: cols[i], ears: 'round', bob: false, shadow: false });
+        txt(who[i], { x: 0, y: 46, 'font-size': 17, fill: '#241534' }, g);
         tap(g, function () { if (i === 2) { BS.win(); } else { BS.nope(g); } });
       })(i);
     }
@@ -903,6 +677,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 44 — analogy */
 {
+  d: 45,
   ask: 'Big circle is to small circle as big star is to...?',
   hint: 'What changed between the first two? Do exactly that to the star.',
   tell: 'A small star, in the same colour.',
@@ -925,6 +700,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 45 — two interleaved sequences */
 {
+  d: 82,
   ask: 'What are the next two?',
   hint: 'Try reading every OTHER one. There are two patterns taking turns.',
   tell: 'One pattern counts 1, 2, 3, 4 and the other counts 9, 8, 7. Next is 4 then 7.',
@@ -944,6 +720,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 46 — shortest path with costs */
 {
+  d: 53,
   ask: 'Take the shortest road from home to school.',
   hint: 'Add up the numbers along each whole route before you choose.',
   tell: 'Through the middle: 3 + 4 = 7, which beats 5 + 5 and 9.',
@@ -980,13 +757,13 @@ var PUZZLES_EXPERT = (function () {
     tap(m, function () { BS.win(); });
     tap(l, function () { BS.nope(l); });
     tap(s, function () { BS.nope(s); });
-    /* was y=290: clipped along the bottom edge of the panel */
-    txt('tap the road you would take', { x: 180, y: 274, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
+    txt('tap the road you would take', { x: 180, y: 290, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
   }
 },
 
 /* 47 — balance algebra */
 {
+  d: 43.5,
   ask: 'The scales balance. How heavy is one star?',
   hint: 'Two stars weigh the same as six blocks. So one star is half of six.',
   tell: 'Two stars balance six blocks, so one star weighs 3 blocks.',
@@ -1005,13 +782,14 @@ var PUZZLES_EXPERT = (function () {
     for (i = 0; i < 6; i++) {
       ink(S('rect', { x: 238 + (i % 3) * 26, y: 104 + Math.floor(i / 3) * 26, width: 22, height: 22, rx: 4, fill: '#6EC6E8' }, st), 2.6);
     }
-    txt('= how many blocks is ONE star?', { x: 180, y: 236, 'font-size': 14, fill: '#241534', opacity: '.65' }, st);
+    txt('how many blocks is ONE star?', { x: 180, y: 278, 'font-size': 14, fill: '#241534', opacity: '.7' }, st);
     BS.chips(['2', '3', '4', '6'], 1);
   }
 },
 
 /* 48 — folded paper and a punch */
 {
+  d: 61,
   ask: 'The paper is folded, then a hole is punched. What does it look like unfolded?',
   hint: 'The fold is down the middle, so every hole gets a twin on the other side.',
   tell: 'Two holes, mirrored across the fold line.',
@@ -1043,10 +821,11 @@ var PUZZLES_EXPERT = (function () {
 
 /* 49 — the heavy ball in two weighings */
 {
+  d: 70.5,
   ask: 'One ball is heavier. The scales tipped like this. Which ball is it?',
   hint: 'The first weighing rules out three balls. The second one narrows it to one.',
   tell: 'The heavy one is in the left group of the first weighing, and it tipped left again. It is ball 1.',
-  why: 'Two weighings, nine balls. You threw away most of the possibilities each time.',
+  why: 'Two weighings were enough. Each one threw away most of the possibilities.',
   build: function (st) {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
     function scale(y, leftLabels, rightLabels, tip) {
@@ -1068,12 +847,13 @@ var PUZZLES_EXPERT = (function () {
     txt('left side went down', { x: 180, y: 116, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
     scale(190, [1], [2], -7);
     txt('left side went down again', { x: 180, y: 228, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
-    BS.chips(['1', '2', '3', '7'], 0);
+    BS.chips(['1', '2', '3', '4'], 0);
   }
 },
 
 /* 50 — magic square */
 {
+  d: 86,
   ask: 'Every row and column must add up to 15.',
   hint: 'Find the row or column that only has one number missing.',
   tell: 'The middle of the bottom row is 9, and the last one is 2.',
@@ -1101,7 +881,6 @@ var PUZZLES_EXPERT = (function () {
       }
     }
     txt('every row and column makes 15', { x: 180, y: 264, 'font-size': 13, fill: '#241534', opacity: '.6' }, st);
-    var pick = 0;
     /* two blanks: bottom-middle (9) and bottom-right (2) */
     BS.chips(['9 then 2', '2 then 9', '9 then 6', '5 then 6'], 0);
   }
@@ -1109,9 +888,10 @@ var PUZZLES_EXPERT = (function () {
 
 /* 51 — the odd one out, by rule not by looks */
 {
+  d: 79,
   ask: 'Three of these follow the same rule. Which one breaks it?',
-  hint: 'Count the sides of each shape and compare it with the number of dots.',
-  tell: 'The square has four sides but three dots. The others match.',
+  hint: 'Count the pointy corners of each shape, then count its dots.',
+  tell: 'The square has four corners but only three dots. The others match.',
   why: 'They looked completely different. The rule connecting them was hiding underneath.',
   build: function (st) {
     scene(st, 'candy', { hills: false, ground: false });
@@ -1138,6 +918,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 52 — sliding block escape (Klotski-lite) */
 {
+  d: 70,
   ask: 'Get the orange block out through the gap on the right.',
   hint: 'The orange block only slides sideways. Clear the top row first, then lift the two tall blocks out of its way.',
   tell: 'Slide the pink bar left, then both tall blocks up, then the orange one straight out.',
@@ -1178,25 +959,40 @@ var PUZZLES_EXPERT = (function () {
         drag(g, {
           onDrop: function (x, y, back) {
             if (done) { return; }
-            var nx = B.x, ny = B.y;
-            if (B.dir === 'h') { nx = Math.round((x - ox - B.w * u / 2) / u); }
-            else { ny = Math.round((y - oy - B.h * u / 2) / u); }
-            /* the hero may slide out through the gap */
-            if (B.hero && nx >= W - B.w + 1) {
+            /* A block SLIDES: it stops at the first thing in its way. The old
+               check looked only at where the block was dropped, so the orange
+               block could be dragged straight through both tall blocks and out
+               of the gap -- the whole puzzle was winnable in one swipe. */
+            var want = B.dir === 'h' ? Math.round((x - ox - B.w * u / 2) / u) : Math.round((y - oy - B.h * u / 2) / u);
+            var cur = B.dir === 'h' ? B.x : B.y, step = want > cur ? 1 : -1;
+            var m = occupied(i), lim = B.dir === 'h' ? W - B.w : H - B.h;
+            function clear(n) {
+              var bx, by, cx = B.dir === 'h' ? n : B.x, cy = B.dir === 'h' ? B.y : n;
+              for (bx = 0; bx < B.w; bx++) {
+                for (by = 0; by < B.h; by++) { if (m[(cx + bx) + ':' + (cy + by)]) { return false; } }
+              }
+              return true;
+            }
+            var at = cur, out = false;
+            while (at !== want) {
+              var nxt = at + step;
+              if (B.hero && step > 0 && nxt > lim) { out = true; break; }   /* through the gap */
+              if (nxt < 0 || nxt > lim || !clear(nxt)) { break; }
+              at = nxt;
+            }
+            if (out) {
               done = true;
-              glide(g, ox + (W + 1) * u, y, 420);
-              setTimeout(BS.win, 460);
+              glide(g, ox + (W + 1) * u, oy + B.y * u + B.h * u / 2, 420);
+              BS.later(BS.win, 460);
               return;
             }
-            nx = Math.max(0, Math.min(W - B.w, nx));
-            ny = Math.max(0, Math.min(H - B.h, ny));
-            var m = occupied(i), bx, by, clash = false;
-            for (bx = 0; bx < B.w; bx++) {
-              for (by = 0; by < B.h; by++) { if (m[(nx + bx) + ':' + (ny + by)]) { clash = true; } }
+            if (at === cur) {
+              if (want !== cur) { BS.nope(g); }
+              glide(g, back.x, back.y);
+              return;
             }
-            if (clash) { BS.nope(g); glide(g, back.x, back.y); return; }
-            B.x = nx; B.y = ny;
-            glide(g, ox + nx * u + B.w * u / 2, oy + ny * u + B.h * u / 2, 170);
+            if (B.dir === 'h') { B.x = at; } else { B.y = at; }
+            glide(g, ox + B.x * u + B.w * u / 2, oy + B.y * u + B.h * u / 2, 170);
           }
         });
       })(blocks[i], i);
@@ -1206,58 +1002,52 @@ var PUZZLES_EXPERT = (function () {
 
 /* 53 — clock reasoning */
 {
+  d: 76,
   ask: 'The clock says 3 o\u2019clock. Where will the big hand be in 45 minutes?',
   hint: 'The big hand goes all the way round in an hour. Forty-five minutes is three quarters.',
   tell: 'Three quarters round from the top, which points at the 9.',
   why: 'You moved time forward in your head and landed on the right quarter.',
   build: function (st) {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
-    var g = G(st, 180, 118);
-    ink(S('circle', { cx: 0, cy: 0, r: 86, fill: '#FFF6E6' }, g), 5);
+    var g = G(st, 180, 100);
+    ink(S('circle', { cx: 0, cy: 0, r: 82, fill: '#FFF6E6' }, g), 5);
     for (var i = 0; i < 12; i++) {
       var a = i * Math.PI / 6 - Math.PI / 2;
       txt(String(i === 0 ? 12 : i), {
-        x: Math.cos(a) * 66, y: Math.sin(a) * 66 + 8, 'font-size': 17, fill: '#241534'
+        x: Math.cos(a) * 63, y: Math.sin(a) * 63 + 7, 'font-size': 17, fill: '#241534'
       }, g);
     }
-    ink(S('line', { x1: 0, y1: 0, x2: 0, y2: -54 }, g), 6).setAttribute('stroke', '#F0466F');
+    ink(S('line', { x1: 0, y1: 0, x2: 0, y2: -50 }, g), 6).setAttribute('stroke', '#F0466F');
     ink(S('line', { x1: 0, y1: 0, x2: 34, y2: 0 }, g), 6);
     ink(S('circle', { cx: 0, cy: 0, r: 7, fill: '#241534' }, g), 2);
-    /* The "the 6 / the 9 / the 3" captions used to hang below each option at
-       y=288, which is inside the stage box's rounded corner and its 3px inset
-       border, so they rendered clipped along the bottom edge. They sit inside
-       the card now, above the hand, and the row moved up 8 units. */
-    options(st, 234, function (gg, i) {
+    options(st, 246, function (gg, i) {
       var n = [6, 9, 3][i];
-      ink(S('circle', { cx: 0, cy: 7, r: 25, fill: '#FFF6E6' }, gg), 3);
+      ink(S('circle', { cx: 0, cy: -7, r: 25, fill: '#FFFFFF' }, gg), 3);
       var ang = (n / 12) * Math.PI * 2 - Math.PI / 2;
-      ink(S('line', { x1: 0, y1: 7, x2: Math.cos(ang) * 19, y2: 7 + Math.sin(ang) * 19 }, gg), 5)
+      ink(S('line', { x1: 0, y1: -7, x2: Math.cos(ang) * 18, y2: -7 + Math.sin(ang) * 18 }, gg), 5)
         .setAttribute('stroke', '#F0466F');
-      txt('the ' + n, { x: 0, y: -26, 'font-size': 12, fill: '#241534', opacity: '.6' }, gg);
-    }, 1);
+      txt('at the ' + n, { x: 0, y: 34, 'font-size': 12, fill: '#241534', opacity: '.7' }, gg);
+    }, 1, null, 84);
   }
 },
 
 /* 54 — which reflection is right */
 {
+  d: 51,
   ask: 'The cat looks in the mirror. Which reflection is correct?',
   hint: 'A mirror swaps left and right, but it never turns you upside down.',
   tell: 'The middle one — same way up, facing back the other way.',
   why: 'Mirrors only flip one way. The upside-down one was a trap.',
   build: function (st) {
     scene(st, 'room', { hills: false, ground: false, vignette: false });
-    animal(st, { kind: 'cat', x: 76, y: 74, size: 21, fill: '#FFB03A', bob: false });
-    /* The "mirror" caption used to sit at y=190, which is underneath the top
-       edge of the answer cards -- 60% of it was covered by card artwork drawn
-       afterwards. It now sits beside the mirror line, clear of the row, and
-       the cards moved up so they no longer run 3.5 units off the stage. */
-    ink(S('line', { x1: 148, y1: 20, x2: 148, y2: 156 }, st), 5).setAttribute('stroke-dasharray', '9 8');
-    txt('mirror', { x: 190, y: 30, 'font-size': 12, fill: '#241534', opacity: '.55' }, st);
+    animal(st, { kind: 'cat', x: 76, y: 66, size: 22, fill: '#FFB03A', bob: false });
+    ink(S('line', { x1: 148, y1: 20, x2: 148, y2: 150 }, st), 5).setAttribute('stroke-dasharray', '9 8');
+    txt('mirror', { x: 148, y: 170, 'font-size': 12, fill: '#241534', opacity: '.6' }, st);
     for (var i = 0; i < 3; i++) {
       (function (i) {
-        var g = G(st, 72 + i * 108, 232);
-        pad(g, 96, 110);
-        ink(S('rect', { x: -46, y: -54, width: 92, height: 108, rx: 10, fill: '#FFF6E6' }, g), 3);
+        var g = G(st, 72 + i * 108, 238);
+        pad(g, 96, 116);
+        ink(S('rect', { x: -46, y: -55, width: 92, height: 110, rx: 10, fill: '#FFF6E6' }, g), 3);
         var inner = S('g', {}, g);
         if (i === 0) { inner.setAttribute('transform', 'translate(0,-6)'); }
         else if (i === 1) { inner.setAttribute('transform', 'translate(0,-6) scale(-1,1)'); }
@@ -1271,6 +1061,7 @@ var PUZZLES_EXPERT = (function () {
 
 /* 55 — the frogs crossing */
 {
+  d: 90,
   ask: 'Swap the frogs. They only hop forward, onto the next lily or over exactly one frog.',
   hint: 'Never let two frogs of the same colour end up nose to nose. Alternate the colours you move.',
   tell: 'Green, blue-jump, blue, green-jump, green-jump, green, blue-jump, blue.',
@@ -1288,10 +1079,9 @@ var PUZZLES_EXPERT = (function () {
       ink(S('ellipse', { cx: 0, cy: 0, rx: 28, ry: 18, fill: '#5FD08A' }, pl), 3.5);
       ink(S('path', { d: 'M0,0 L-9,-15', fill: 'none' }, pl), 2.5);
     }
-    /* these were ducks. The question says frogs, so they are frogs now. */
     function mk(kind, at2) {
-      var g = animal(st, { kind: 'frog', x: xs[at2], y: 152,
-        fill: kind === 'g' ? '#5FC47F' : '#6EA8E8', size: 13, bob: false });
+      var g = animal(st, { kind: 'frog', x: xs[at2], y: 148,
+        fill: kind === 'g' ? '#7FD094' : '#6EC6E8', size: 14, bob: false });
       return g;
     }
     frogs.g0 = mk('g', 0); frogs.g1 = mk('g', 1);
@@ -1317,17 +1107,41 @@ var PUZZLES_EXPERT = (function () {
       if (d === dir * 2 && slots[i + dir] === null) { BS.nope(owner[i]); return; }
       slots[empty] = slots[i]; slots[i] = null;
       owner[empty] = owner[i]; owner[i] = null;
-      glide(owner[empty], xs[empty], 152, 230);
+      glide(owner[empty], xs[empty], 148, 230);
       BS.SFX.drop();
-      setTimeout(function () {
-        if (slots[0] === 'b' && slots[1] === 'b' && slots[3] === 'g' && slots[4] === 'g') { BS.win(); }
+      BS.later(function () {
+        if (slots[0] === 'b' && slots[1] === 'b' && slots[3] === 'g' && slots[4] === 'g') { BS.win(); return; }
+        if (!canMove()) { jammed(); }
       }, 280);
+    }
+    function legal(i) {
+      if (slots[i] === null) { return false; }
+      var dir = slots[i] === 'g' ? 1 : -1, d = slots.indexOf(null) - i;
+      return d === dir || (d === dir * 2 && slots[i + dir] !== null);
+    }
+    function canMove() {
+      for (var k = 0; k < N; k++) { if (legal(k)) { return true; } }
+      return false;
+    }
+    /* A wrong hop jams the pond for good. That used to leave her staring at
+       five frogs that ignored every tap until she backed out of the puzzle. */
+    function jammed() {
+      BS.nope();
+      BS.lock(true);
+      BS.later(function () {
+        slots = ['g', 'g', null, 'b', 'b'];
+        owner = [frogs.g0, frogs.g1, null, frogs.b0, frogs.b1];
+        glide(frogs.g0, xs[0], 148, 300); glide(frogs.g1, xs[1], 148, 300);
+        glide(frogs.b0, xs[3], 148, 300); glide(frogs.b1, xs[4], 148, 300);
+        BS.lock(false);
+      }, 700);
     }
   }
 },
 
 /* 56 — the whole picture */
 {
+  d: 52.5,
   ask: 'Only one piece completes the pattern. Which?',
   hint: 'The row tells you the colour. The column tells you how many dots.',
   tell: 'Its row is blue, and its column has two dots. So: blue, with two dots.',
@@ -1366,8 +1180,4 @@ var PUZZLES_EXPERT = (function () {
 }
 
   ];
-})();
-
-(function () {
-  for (var i = 0; i < PUZZLES_EXPERT.length; i++) { PUZZLES.push(PUZZLES_EXPERT[i]); }
-})();
+})());

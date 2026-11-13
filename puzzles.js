@@ -1,63 +1,24 @@
 /* ==========================================================
-   Brain Snacks — the trick puzzles.
-   { ask, hint, tell, why, build(stage) }
+   Brain Snacks — pack 1: the original trick puzzles.
+   { d, ask, hint, tell, why, build(stage) }
+   `d` is the puzzle's place on the difficulty ladder; the engine sorts by it,
+   so the order in this file does not matter.
    Stage is 360 x 300 units. BS.win() / BS.nope(el).
    ========================================================== */
 
-var PUZZLES = (function () {
+BS.addPuzzles((function () {
   'use strict';
 
   var A = ART;
   var S = A.S, G = A.G, at = A.at, ink = A.ink, txt = A.txt;
   var critter = A.critter, animal = A.animal, star = A.star, scene = A.scene, drop = A.shadow;
   var tap = BS.tap, drag = BS.drag, glide = BS.glide;
-
-  function hit(x, y, tx, ty, r) { return Math.abs(x - tx) < (r || 44) && Math.abs(y - ty) < (r || 44); }
-
-  /* An invisible pad so thin lines and off-centre art are still easy for a
-     small finger to hit. Added first so it sits behind the drawing. */
-  function pad(g, w, h, dy) {
-    return S('rect', {
-      x: -w / 2, y: -h / 2 + (dy || 0), width: w, height: h, rx: 10,
-      fill: '#FFFFFF', opacity: '0', 'pointer-events': 'all'
-    }, g);
-  }
-
-  /* shared: three cards in a row, tap two to swap, win when sorted 0,1,2 */
-  function orderGame(st, y, drawOne, start) {
-    var xs = [66, 180, 294], order = start.slice(), picked = -1, cards = [];
-    for (var i = 0; i < 3; i++) {
-      (function (slot) {
-        var g = G(st, xs[slot], y);
-        pad(g, 100, 124);
-        drawOne(g, order[slot]);
-        var ring = ink(S('rect', { x: -52, y: -64, width: 104, height: 128, rx: 16, fill: 'none' }, g), 5);
-        ring.setAttribute('stroke', '#FF8A3D');
-        ring.setAttribute('opacity', '0');
-        var card = { g: g, ring: ring };
-        cards[slot] = card;
-        tap(g, function () { pick(cards.indexOf(card)); });
-      })(i);
-    }
-    function pick(slot) {
-      if (slot < 0) { return; }
-      if (picked === -1) { picked = slot; cards[slot].ring.setAttribute('opacity', '1'); BS.SFX.tap(); return; }
-      if (picked === slot) { picked = -1; cards[slot].ring.setAttribute('opacity', '0'); return; }
-      cards[picked].ring.setAttribute('opacity', '0');
-      var a = picked, b = slot, t = order[a];
-      order[a] = order[b]; order[b] = t;
-      glide(cards[a].g, xs[b], y); glide(cards[b].g, xs[a], y);
-      t = cards[a]; cards[a] = cards[b]; cards[b] = t;
-      picked = -1; BS.SFX.drop();
-      setTimeout(function () {
-        if (order[0] === 0 && order[1] === 1 && order[2] === 2) { BS.win(); } else { BS.nope(); }
-      }, 320);
-    }
-  }
+  var hit = KIT.hit, pad = KIT.pad, orderGame = KIT.orderGame;
 
   return [
 
 /* 1 */ {
+  d: 1,
   ask: 'Which one is really the biggest?',
   hint: "Don't trust the drawing. Which one is biggest in real life?",
   tell: 'Tap the elephant, even though it is drawn tiny.',
@@ -74,6 +35,7 @@ var PUZZLES = (function () {
 },
 
 /* 2 */ {
+  d: 2,
   ask: 'One cat is not like the others. Tap it.',
   hint: 'Look at the tops of their heads.',
   tell: 'One cat is missing an ear — middle row, on the right.',
@@ -94,6 +56,7 @@ var PUZZLES = (function () {
 },
 
 /* 3 */ {
+  d: 18,
   ask: 'How many ducks are on the pond?',
   hint: 'Are you sure you can see them all? Try moving things around.',
   tell: 'Drag the bush and the rock away. There are 7.',
@@ -121,6 +84,7 @@ var PUZZLES = (function () {
 },
 
 /* 4 */ {
+  d: 11,
   ask: 'Which glass has more juice?',
   hint: 'Tall is not the same as big. Think about how wide they are too.',
   tell: 'The short fat glass. It holds more even though it looks smaller.',
@@ -143,6 +107,7 @@ var PUZZLES = (function () {
 },
 
 /* 5 */ {
+  d: 10,
   ask: 'The owl wants to wake up. Help him!',
   hint: 'Owls only wake up at night. Can you get rid of the daytime?',
   tell: 'Drag the sun down off the bottom of the screen.',
@@ -161,12 +126,9 @@ var PUZZLES = (function () {
     ink(S('rect', { x: 152, y: 150, width: 26, height: 104, fill: '#8A5F3B' }, st), 4);
     ink(S('path', { d: 'M165,168 L296,150', fill: 'none' }, st), 9);
     var owl = animal(st, { kind: 'owl', x: 258, y: 116, size: 22, fill: '#C58B4F', mood: 'sleep', shadow: false });
-    /* The z's used to drift up and to the RIGHT, straight underneath the sun
-       at (300,56) -- one was completely hidden and the other 41% covered.
-       The sun owns the top-right corner, so they drift left instead. */
-    var z = G(owl.__body, -30, -26);
+    var z = G(owl.__body, 30, -26);
     txt('z', { x: 0, y: 0, 'font-size': 14, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
-    txt('z', { x: -13, y: -14, 'font-size': 19, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
+    txt('z', { x: 13, y: -14, 'font-size': 19, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
     tap(owl, function () { BS.nope(owl); });
 
     var sun = G(st, 300, 56);
@@ -192,7 +154,7 @@ var PUZZLES = (function () {
           z.setAttribute('opacity', '0');
           owl.__eyes.shut.setAttribute('opacity', '0');
           owl.__eyes.open.setAttribute('opacity', '1');
-          setTimeout(BS.win, 320);
+          BS.later(BS.win, 320);
         }
       }
     });
@@ -200,6 +162,7 @@ var PUZZLES = (function () {
 },
 
 /* 6 */ {
+  d: 13,
   ask: 'Which one is heavier?',
   hint: 'Big does not always mean heavy. What is it made of?',
   tell: 'The little metal ball.',
@@ -227,6 +190,7 @@ var PUZZLES = (function () {
 },
 
 /* 7 */ {
+  d: 5,
   ask: 'Water is escaping! Block the hole.',
   hint: 'Only one lid is the right shape for that hole.',
   tell: 'Drag the star-shaped lid onto the star-shaped hole.',
@@ -256,7 +220,7 @@ var PUZZLES = (function () {
         else { star(g, 0, 0, 25, L.col); }
         drag(g, { onDrop: function (x, y, back) {
           if (!hit(x, y, hx, hy, 36)) { return; }
-          if (L.sh === 'star') { glide(g, hx, hy); spray.setAttribute('opacity', '0'); setTimeout(BS.win, 300); }
+          if (L.sh === 'star') { glide(g, hx, hy); spray.setAttribute('opacity', '0'); BS.later(BS.win, 300); }
           else { BS.nope(g); glide(g, back.x, back.y); }
         } });
       })(lids[i]);
@@ -265,6 +229,7 @@ var PUZZLES = (function () {
 },
 
 /* 8 */ {
+  d: 12,
   ask: 'What comes next on the belt?',
   hint: 'Say the colours out loud, left to right. What is the pattern?',
   tell: 'Drag the blue square into the empty space.',
@@ -290,7 +255,7 @@ var PUZZLES = (function () {
         else { ink(S('path', { d: 'M0,-24 L24,20 L-24,20 Z', fill: '#3FBF7F' }, g)); }
         drag(g, { onDrop: function (x, y, back) {
           if (!hit(x, y, sx, 120, 44)) { return; }
-          if (O.t === 'b') { glide(g, sx, 120); setTimeout(BS.win, 280); }
+          if (O.t === 'b') { glide(g, sx, 120); BS.later(BS.win, 280); }
           else { BS.nope(g); glide(g, back.x, back.y); }
         } });
       })(opts[i]);
@@ -299,6 +264,7 @@ var PUZZLES = (function () {
 },
 
 /* 9 */ {
+  d: 24,
   ask: 'How many legs are there altogether?',
   hint: 'Each dog has four legs. The duck has two. Count them all.',
   tell: 'Four and four and two makes ten.',
@@ -313,6 +279,7 @@ var PUZZLES = (function () {
 },
 
 /* 10 */ {
+  d: 20,
   ask: 'Turn on the lamp.',
   hint: 'The switch is not broken. Something else is not connected.',
   tell: 'Drag the plug into the socket first, then tap the switch.',
@@ -343,12 +310,13 @@ var PUZZLES = (function () {
       bulb.setAttribute('fill', '#FFE58A');
       glow.setAttribute('opacity', '1');
       shade.setAttribute('fill', '#FF6F92');
-      setTimeout(BS.win, 320);
+      BS.later(BS.win, 320);
     });
   }
 },
 
 /* 11 */ {
+  d: 7,
   ask: 'Put the story in order. Tap two to swap them.',
   hint: 'Which one happens first, right at the very beginning?',
   tell: 'Seed first, then the little sprout, then the flower.',
@@ -378,6 +346,7 @@ var PUZZLES = (function () {
 },
 
 /* 12 */ {
+  d: 30,
   ask: 'This flower is very thirsty.',
   hint: 'There is a cloud up there. What do clouds do when you squeeze them?',
   tell: 'Rub the cloud left and right, again and again, until it rains.',
@@ -425,7 +394,7 @@ var PUZZLES = (function () {
             });
           })(k);
         }
-        setTimeout(function () {
+        BS.later(function () {
           stem.setAttribute('d', 'M0,0 L0,-58'); at(head, 0, -60);
           for (var p = 0; p < petals.length; p++) { petals[p].setAttribute('fill', '#F0466F'); }
           BS.win();
@@ -436,6 +405,7 @@ var PUZZLES = (function () {
 },
 
 /* 13 */ {
+  d: 27,
   ask: 'Every monster needs one cookie.',
   hint: 'Only two cookies down here. Is there anything round up in the sky?',
   tell: 'Drag the moon down to the last monster. It was a cookie all along.',
@@ -456,7 +426,7 @@ var PUZZLES = (function () {
       A.ink(S('path', { d: 'M-8,13 q8,10 16,0', fill: 'none' }, m.__body), 4);
       BS.SFX.good();
       fed++;
-      if (fed === 3) { setTimeout(BS.win, 420); }
+      if (fed === 3) { BS.later(BS.win, 420); }
       return true;
     }
     function dropOn(g) {
@@ -487,6 +457,7 @@ var PUZZLES = (function () {
 },
 
 /* 14 */ {
+  d: 40,
   ask: 'Catch the mouse! He is too quick to grab.',
   hint: 'He always escapes down a hole. What if he could not reach either one?',
   tell: 'Cover BOTH holes at the same time, using two fingers.',
@@ -512,12 +483,13 @@ var PUZZLES = (function () {
       caught = true;
       at(mouse, 180, 154);
       mouse.__eyes.open.setAttribute('opacity', '1');
-      setTimeout(BS.win, 400);
+      BS.later(BS.win, 400);
     });
   }
 },
 
 /* 15 */ {
+  d: 26,
   ask: 'Watch carefully. Where is the ball?',
   hint: 'Keep your eyes on one cup and follow it. Do not blink.',
   tell: 'Follow the cup the ball started under, all the way through the swaps.',
@@ -540,7 +512,7 @@ var PUZZLES = (function () {
         cups.push(g);
         tap(g, function () {
           if (BS.isLocked()) { return; }
-          if (g.__slot === ballAt) { at(ball, xs[ballAt], 196); ball.parentNode.appendChild(ball); glide(g, xs[g.__slot], 96); setTimeout(BS.win, 350); }
+          if (g.__slot === ballAt) { at(ball, xs[ballAt], 196); ball.parentNode.appendChild(ball); glide(g, xs[g.__slot], 96); BS.later(BS.win, 350); }
           else { BS.nope(g); }
         });
       })(i);
@@ -548,14 +520,14 @@ var PUZZLES = (function () {
     BS.lock(true);
     /* lift the cups, show the ball, put them down, then shuffle */
     for (i = 0; i < 3; i++) { glide(cups[i], xs[i], 104, 400); }
-    setTimeout(function () {
+    BS.later(function () {
       for (var k = 0; k < 3; k++) { glide(cups[k], xs[k], 150, 400); }
     }, 1200);
 
     var swaps = [[0, 1], [1, 2], [0, 2], [1, 2], [0, 1]];
     for (i = 0; i < swaps.length; i++) {
       (function (pair, n) {
-        setTimeout(function () {
+        BS.later(function () {
           var a = null, b = null, k;
           for (k = 0; k < 3; k++) {
             if (cups[k].__slot === pair[0]) { a = cups[k]; }
@@ -568,7 +540,7 @@ var PUZZLES = (function () {
           else if (ballAt === pair[1]) { ballAt = pair[0]; }
           at(ball, xs[ballAt], 196);
           BS.SFX.drop();
-          if (n === swaps.length - 1) { setTimeout(function () { BS.lock(false); }, 520); }
+          if (n === swaps.length - 1) { BS.later(function () { BS.lock(false); }, 520); }
         }, 1800 + n * 620);
       })(swaps[i], i);
     }
@@ -576,6 +548,7 @@ var PUZZLES = (function () {
 },
 
 /* 16 */ {
+  d: 50,
   ask: 'Turn off all the lights.',
   hint: 'Tapping a light also flips the ones next to it. Try the corners.',
   tell: 'Tap the middle of the top row, then the middle of the bottom row.',
@@ -606,7 +579,7 @@ var PUZZLES = (function () {
           if (BS.isLocked()) { return; }
           flip(i); BS.SFX.flip(); paint();
           for (var k = 0; k < 9; k++) { if (on[k]) { return; } }
-          setTimeout(BS.win, 260);
+          BS.later(BS.win, 260);
         });
       })(i);
     }
@@ -622,6 +595,7 @@ var PUZZLES = (function () {
 },
 
 /* 17 */ {
+  d: 16,
   ask: 'Three stars are hiding in this picture. Find them all.',
   hint: 'Look behind things, and up in the corners. They are the same colour as what they hide in.',
   tell: 'One is in the bush, one is in the cloud, and one is down in the grass.',
@@ -654,7 +628,7 @@ var PUZZLES = (function () {
           found++;
           counter.textContent = found + ' of 3';
           BS.SFX.good();
-          if (found === 3) { setTimeout(BS.win, 340); }
+          if (found === 3) { BS.later(BS.win, 340); }
         });
       })(spots[i]);
     }
@@ -662,6 +636,7 @@ var PUZZLES = (function () {
 },
 
 /* 18 */ {
+  d: 4,
   ask: 'The cat is stuck up the tree.',
   hint: 'There is something leaning against the wall that would help her climb down.',
   tell: 'Drag the ladder over to the tree trunk.',
@@ -682,10 +657,10 @@ var PUZZLES = (function () {
     drag(lad, { onDrop: function (x, y) {
       if (hit(x, y, 226, 172, 58)) {
         glide(lad, 226, 172);
-        setTimeout(function () {
+        BS.later(function () {
           glide(cat, 226, 214, 700);
           cat.__eyes.open.setAttribute('opacity', '1');
-          setTimeout(BS.win, 800);
+          BS.later(BS.win, 800);
         }, 320);
       }
     } });
@@ -693,6 +668,7 @@ var PUZZLES = (function () {
 },
 
 /* 19 */ {
+  d: 32,
   ask: 'Make the seesaw balance.',
   hint: 'The left side weighs 3. What two blocks add up to 3?',
   tell: 'Put the 1 and the 2 on the right side.',
@@ -709,7 +685,7 @@ var PUZZLES = (function () {
     function tilt() {
       var d = Math.max(-14, Math.min(14, (lw - rw) * 5));
       plank.setAttribute('transform', 'translate(180,174) rotate(' + d + ')');
-      if (rw === lw) { setTimeout(BS.win, 420); }
+      if (rw === lw) { BS.later(BS.win, 420); }
     }
     tilt();
     var blocks = [{ v: 1, x: 66, y: 268, c: '#3FBF7F' }, { v: 2, x: 180, y: 268, c: '#6EC6E8' }, { v: 4, x: 294, y: 268, c: '#FFC93C' }];
@@ -726,13 +702,13 @@ var PUZZLES = (function () {
             if (!used[k] && hit(x, y, slots[k][0], slots[k][1], 46)) {
               used[k] = true; g.__slot = k; rw += B.v;
               glide(g, slots[k][0], slots[k][1]);
-              setTimeout(tilt, 280);
+              BS.later(tilt, 280);
               return;
             }
           }
           if (g.__slot !== undefined && g.__slot !== null) {
             used[g.__slot] = false; rw -= B.v; g.__slot = null;
-            setTimeout(tilt, 280);
+            BS.later(tilt, 280);
           }
           glide(g, back.x, back.y);
         } });
@@ -742,6 +718,7 @@ var PUZZLES = (function () {
 },
 
 /* 20 */ {
+  d: 28,
   ask: 'How many triangles can you see?',
   hint: 'There are two small ones. Now look at the whole shape as well.',
   tell: 'Two small triangles, and the big one they make together. Three.',
@@ -757,6 +734,7 @@ var PUZZLES = (function () {
 },
 
 /* 21 */ {
+  d: 3,
   ask: 'Which basket has more apples?',
   hint: 'Do not look at how big they are. Count them one by one.',
   tell: 'The right basket. It has five, the left one has three.',
@@ -786,6 +764,7 @@ var PUZZLES = (function () {
 },
 
 /* 22 */ {
+  d: 19,
   ask: 'Put out the campfire.',
   hint: 'You cannot blow it out. What is floating up in the sky?',
   tell: 'Drag the cloud until it sits right above the fire.',
@@ -823,7 +802,7 @@ var PUZZLES = (function () {
           });
         })(k);
       }
-      setTimeout(function () {
+      BS.later(function () {
         f1.setAttribute('opacity', '0'); f2.setAttribute('opacity', '0');
         for (var s = 0; s < 4; s++) {
           var sm = S('circle', { cx: 180 + (s - 1.5) * 9, cy: 190 - s * 10, r: 8 + s * 2, fill: '#C9C4D6', opacity: '.5' }, st);
@@ -836,6 +815,7 @@ var PUZZLES = (function () {
 },
 
 /* 23 */ {
+  d: 15,
   ask: 'Line them up: smallest first. Tap two to swap.',
   hint: 'The tiniest one belongs on the left, the biggest on the right.',
   tell: 'Mouse, then cat, then bear.',
@@ -854,6 +834,7 @@ var PUZZLES = (function () {
 },
 
 /* 24 */ {
+  d: 9,
   ask: 'Which key opens the lock?',
   hint: 'Look at the shape of the hole, then look at the end of each key.',
   tell: 'The key with the round end.',
@@ -884,7 +865,7 @@ var PUZZLES = (function () {
           if (!hit(x, y, 180, 122, 56)) { return; }
           if (K.t === 'round') {
             glide(g, 180, 122);
-            setTimeout(function () {
+            BS.later(function () {
               lock.setAttribute('transform', 'translate(180,96) rotate(-8)');
               BS.win();
             }, 340);
@@ -896,4 +877,4 @@ var PUZZLES = (function () {
 }
 
   ];
-})();
+})());
