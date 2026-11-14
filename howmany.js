@@ -131,6 +131,16 @@
   }
 
   BS.registerMode('howmany', {
+    name: 'How Many', shelf: 'quick', color: '#8FD98F', shade: '#61A661',
+    keys: ['bs.howmanyBest'], best: ['bs.howmanyBest', 'right', 'right'], blurb: 'A quick look',
+    icon: function (a) {
+      var i;
+    var hm = [[16, 12], [32, 9], [48, 14], [24, 28], [42, 30], [60, 24]];
+    for (i = 0; i < hm.length; i++) {
+      ART.ink(ART.S('circle', { cx: hm[i][0], cy: hm[i][1], r: 6, fill: '#F0466F' }, a), 2.2);
+    }
+    ART.txt('?', { x: 72, y: 30, 'font-size': 22, fill: '#241534', opacity: '.5' }, a);
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('How Many');

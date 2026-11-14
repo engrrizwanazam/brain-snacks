@@ -1,10 +1,24 @@
 /* ==========================================================
-   Brain Snacks — pack 4 (v10): nineteen puzzles for the first
-   six chapters. They fill the gaps in the early ladder, so the
-   climb to the state puzzles is a slope and not a wall.
+   Brain Snacks — puzzles 62-73.
+   Twelve new ones, and the rule from v9 still holds: new pictures,
+   not easier versions of old ones. Nothing in here shares artwork or
+   a mechanic with anything already in the app.
 
-   Each has an `id`, so its question can be reworded later without
-   losing a solve. `d` is its place on the ladder.
+     62 shunting yard    drag two trains past each other with one siding
+     63 caterpillar      eat every leaf, never cross your own trail
+     64 the bee          queue up arrows, then run them
+     65 the tilted jars  which water line is the real one
+     66 the low sun      drag the shadow where it belongs
+     67 off the table    where a rolling ball actually lands
+     68 sorting bins     the rule is hidden behind colour and shape
+     69 the machine      work out what it does to a number
+     70 the sock drawer  how many to be sure (pigeonhole)
+     71 from above       what a block tower looks like looking down
+     72 make the square  pick the two pieces that fit
+     73 turned around    a rotation, with the mirror sitting next to it
+
+   Safari 12 throughout: no arrow functions, no template literals,
+   SVG transforms as attributes.
    ========================================================== */
 
 BS.addPuzzles((function () {
@@ -12,667 +26,835 @@ BS.addPuzzles((function () {
 
   var A = ART;
   var S = A.S, G = A.G, ink = A.ink, txt = A.txt, place = A.place;
-  var animal = A.animal, star = A.star, scene = A.scene;
-  var tap = BS.tap, drag = BS.drag, glide = BS.glide, later = BS.later;
-  var hit = KIT.hit, pad = KIT.pad, orderGame = KIT.orderGame, options = KIT.options;
+  var animal = A.animal, star = A.star, scene = A.scene, critter = A.critter;
+  var tap = BS.tap, drag = BS.drag, glide = BS.glide;
 
-  function note(st, s, x, y, size) {
-    return txt(s, { x: x, y: y, 'font-size': size || 12, fill: '#241534', opacity: '.6' }, st);
+  /* invisible hit area — always added LAST, above the artwork */
+  function pad(g, w, h, dy) {
+    return S('rect', { x: -w / 2, y: -h / 2 + (dy || 0), width: w, height: h, rx: 10,
+      fill: '#FFFFFF', opacity: '0', 'pointer-events': 'all' }, g);
   }
-  function cloud(st, x, y, z, col) {
-    var g = G(st, x, y);
-    z = z || 1; col = col || '#FFFFFF';
-    ink(S('circle', { cx: -26 * z, cy: 6 * z, r: 22 * z, fill: col }, g));
-    ink(S('circle', { cx: 25 * z, cy: 8 * z, r: 19 * z, fill: col }, g));
-    ink(S('circle', { cx: 0, cy: -9 * z, r: 28 * z, fill: col }, g));
-    S('circle', { cx: 0, cy: 4 * z, r: 22 * z, fill: col }, g);
+
+  /* three tappable cards along the bottom */
+  function options(st, y, draw, rightIndex, xs) {
+    xs = xs || [72, 180, 288];
+    for (var i = 0; i < xs.length; i++) {
+      (function (i) {
+        var g = G(st, xs[i], y);
+        ink(S('rect', { x: -40, y: -40, width: 80, height: 80, rx: 12, fill: '#FFF6E6' }, g), 3);
+        draw(g, i);
+        pad(g, 92, 92);
+        tap(g, function () { if (i === rightIndex) { BS.win(); } else { BS.nope(g); } });
+      })(i);
+    }
+  }
+
+  function cell(parent, x, y, s, fill) {
+    return ink(S('rect', { x: x - s / 2, y: y - s / 2, width: s, height: s, rx: s * .18, fill: fill }, parent), s * .12);
+  }
+
+  /* Draw a little shape set from a list of [col,row] cells, centred on the
+     group. Used by the three shape puzzles at the end. */
+  function cells(parent, list, s, fill) {
+    var i, minc = 99, maxc = -99, minr = 99, maxr = -99;
+    for (i = 0; i < list.length; i++) {
+      minc = Math.min(minc, list[i][0]); maxc = Math.max(maxc, list[i][0]);
+      minr = Math.min(minr, list[i][1]); maxr = Math.max(maxr, list[i][1]);
+    }
+    var ox = (minc + maxc) / 2, oy = (minr + maxr) / 2;
+    for (i = 0; i < list.length; i++) {
+      cell(parent, (list[i][0] - ox) * s, (list[i][1] - oy) * s, s * .94, fill);
+    }
+  }
+
+  /* Clip a polygon to the half-plane nx*x + ny*y <= d (Sutherland-Hodgman).
+     The tilted jars need a real water surface at a real angle, and clipping
+     it exactly beats a clipPath, which this WebKit renders unreliably. */
+  function clipHalf(poly, nx, ny, d) {
+    var out = [], i, a, b, da, db, t;
+    for (i = 0; i < poly.length; i++) {
+      a = poly[i]; b = poly[(i + 1) % poly.length];
+      da = nx * a[0] + ny * a[1] - d;
+      db = nx * b[0] + ny * b[1] - d;
+      if (da <= 0) { out.push(a); }
+      if ((da < 0 && db > 0) || (da > 0 && db < 0)) {
+        t = da / (da - db);
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      }
+    }
+    return out;
+  }
+  function polyPath(poly) {
+    var d = '', i;
+    for (i = 0; i < poly.length; i++) {
+      d += (i ? ' L' : 'M') + Math.round(poly[i][0] * 100) / 100 + ',' + Math.round(poly[i][1] * 100) / 100;
+    }
+    return d + ' Z';
+  }
+
+  /* a side-on locomotive, drawn about its own centre */
+  function loco(parent, x, y, fill, flip) {
+    var g = G(parent, x, y);
+    var b = S('g', {}, g);
+    if (flip) { b.setAttribute('transform', 'scale(-1,1)'); }
+    ink(S('circle', { cx: -17, cy: 17, r: 9, fill: '#4A3A66' }, b), 3);
+    ink(S('circle', { cx: 13, cy: 17, r: 9, fill: '#4A3A66' }, b), 3);
+    S('circle', { cx: -17, cy: 17, r: 3.4, fill: '#FFF6E6' }, b);
+    S('circle', { cx: 13, cy: 17, r: 3.4, fill: '#FFF6E6' }, b);
+    ink(S('rect', { x: -31, y: -13, width: 62, height: 28, rx: 6, fill: fill }, b), 3.5);
+    ink(S('rect', { x: 4, y: -31, width: 26, height: 20, rx: 5, fill: fill }, b), 3.5);
+    S('rect', { x: 10, y: -26, width: 14, height: 11, rx: 3, fill: '#FFF6E6' }, b);
+    ink(S('rect', { x: -25, y: -27, width: 13, height: 16, rx: 3, fill: fill }, b), 3);
+    S('ellipse', { cx: -18.5, cy: -30, rx: 9, ry: 5, fill: '#FFFFFF', opacity: '.55' }, b);
+    return g;
+  }
+
+  /* a fat caterpillar, head to the right */
+  function grub(parent, x, y) {
+    var g = G(parent, x, y), i;
+    for (i = 3; i >= 1; i--) {
+      ink(S('circle', { cx: -i * 11, cy: 0, r: 9.5 - i * .6, fill: '#8FD46A' }, g), 3);
+    }
+    ink(S('circle', { cx: 0, cy: -1, r: 12, fill: '#5FB84A' }, g), 3.5);
+    ink(S('line', { x1: -4, y1: -11, x2: -7, y2: -20 }, g), 2.4);
+    ink(S('line', { x1: 4, y1: -11, x2: 7, y2: -20 }, g), 2.4);
+    S('circle', { cx: -7, cy: -20, r: 2.6, fill: '#241534' }, g);
+    S('circle', { cx: 7, cy: -20, r: 2.6, fill: '#241534' }, g);
+    ink(S('circle', { cx: -3.6, cy: -2, r: 3.2, fill: '#FFFFFF' }, g), 1.6);
+    ink(S('circle', { cx: 4.8, cy: -2, r: 3.2, fill: '#FFFFFF' }, g), 1.6);
+    S('circle', { cx: -3, cy: -1.4, r: 1.6, fill: '#241534' }, g);
+    S('circle', { cx: 5.4, cy: -1.4, r: 1.6, fill: '#241534' }, g);
+    ink(S('path', { d: 'M-3,5 q4,4 8,0', fill: 'none' }, g), 2);
+    return g;
+  }
+
+  /* a bee, facing right */
+  function beeArt(parent, x, y) {
+    var g = G(parent, x, y);
+    S('ellipse', { cx: -2, cy: -9, rx: 11, ry: 7, fill: '#FFFFFF', opacity: '.72' }, g);
+    S('ellipse', { cx: 9, cy: -9, rx: 9, ry: 6, fill: '#FFFFFF', opacity: '.72' }, g);
+    ink(S('ellipse', { cx: 0, cy: 0, rx: 15, ry: 11, fill: '#FFC93C' }, g), 3);
+    S('path', { d: 'M-4,-10.4 L-4,10.4 L1,10.2 L1,-10.2 Z', fill: '#3B2B1E' }, g);
+    S('path', { d: 'M6,-9.2 L6,9.2 L10,7.8 L10,-7.8 Z', fill: '#3B2B1E' }, g);
+    ink(S('line', { x1: -9, y1: -9, x2: -13, y2: -17 }, g), 2.2);
+    S('circle', { cx: -13, cy: -17, r: 2.4, fill: '#241534' }, g);
+    S('circle', { cx: -11, cy: -1, r: 2.3, fill: '#241534' }, g);
+    return g;
+  }
+
+  function flowerArt(parent, x, y) {
+    var g = G(parent, x, y), i, a;
+    for (i = 0; i < 6; i++) {
+      a = i * Math.PI / 3;
+      ink(S('ellipse', { cx: Math.cos(a) * 12, cy: Math.sin(a) * 12, rx: 8, ry: 6,
+        fill: '#FF6F92', transform: 'rotate(' + Math.round(i * 60) + ' ' +
+        Math.round(Math.cos(a) * 12) + ' ' + Math.round(Math.sin(a) * 12) + ')' }, g), 2.4);
+    }
+    ink(S('circle', { cx: 0, cy: 0, r: 8, fill: '#FFE07A' }, g), 2.6);
+    return g;
+  }
+
+  /* one isometric block, x/y is the centre of its top face */
+  function block(parent, x, y, top, left, right) {
+    var g = G(parent, x, y);
+    ink(S('path', { d: 'M0,-15 L26,0 L0,15 L-26,0 Z', fill: top }, g), 2.6);
+    ink(S('path', { d: 'M-26,0 L0,15 L0,41 L-26,26 Z', fill: left }, g), 2.6);
+    ink(S('path', { d: 'M26,0 L0,15 L0,41 L26,26 Z', fill: right }, g), 2.6);
     return g;
   }
 
   return [
 
-/* ---------- writing size is not number size ---------- */
+/* 62 — the shunting yard.
+   Two trains on one track cannot pass. The siding is not on the way to
+   anywhere: the red train has to leave the main line, sit still while the
+   blue one goes by, and only then carry on. Backing into a dead end on
+   purpose is the same idea as the river crossing wearing a different coat. */
 {
-  id: 'n-bignum', d: 8,
-  ask: 'Which number is the biggest?',
-  hint: 'Big writing is not a big number. Read each one.',
-  tell: 'Tap the tiny 9. Nine is more than eight, five or three.',
-  why: 'A number is as big as what it counts, not as big as someone wrote it.',
+  d: 72.5,
+  ask: 'Swap the two trains over. Only one train fits on the short side track.',
+  hint: 'The trains cannot squeeze past each other on the main line. Is there somewhere one could wait?',
+  tell: 'Red to the middle, red up onto the side track, blue across to the left, then red back down and along.',
+  why: 'You parked a train somewhere it did not want to go, so the other one could get past.',
   build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    var nums = [
-      { n: '3', x: 86, y: 204, fs: 150, c: '#F0466F', w: 96, h: 124, ok: false },
-      { n: '8', x: 198, y: 150, fs: 76, c: '#6EC6E8', w: 62, h: 72, ok: false },
-      { n: '5', x: 264, y: 244, fs: 46, c: '#3FBF7F', w: 50, h: 54, ok: false },
-      { n: '9', x: 314, y: 96, fs: 23, c: '#FF8A3D', w: 46, h: 46, ok: true }
-    ];
-    for (var i = 0; i < nums.length; i++) {
-      (function (N) {
-        var g = G(st, N.x, N.y);
-        pad(g, N.w, N.h, -N.fs * .36);
-        txt(N.n, { x: 0, y: 0, 'font-size': N.fs, fill: N.c, stroke: '#241534',
-          'stroke-width': Math.max(3, N.fs * .06), 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, g);
-        tap(g, function () { if (N.ok) { BS.win(); } else { BS.nope(g); } });
-      })(nums[i]);
+    scene(st, 'day', { hills: true, ground: '#8FCB77', groundY: 236, tufts: false, vignette: false });
+    /* rails */
+    function rail(x0, x1, y) {
+      var i;
+      for (i = x0 + 8; i < x1 - 4; i += 17) {
+        ink(S('rect', { x: i - 5, y: y + 5, width: 12, height: 15, rx: 2, fill: '#9A6E48' }, st), 0);
+      }
+      ink(S('rect', { x: x0, y: y, width: x1 - x0, height: 6, rx: 3, fill: '#7C6A8E' }, st), 2);
     }
+    rail(22, 338, 214);
+    rail(126, 236, 140);
+    ink(S('path', { d: 'M236,146 q34,4 44,68', fill: 'none' }, st), 5).setAttribute('stroke', '#7C6A8E');
+
+    var SLOT = { A: [72, 196], B: [180, 196], C: [288, 196], S: [181, 122] };
+    var NEXT = { A: ['B'], B: ['A', 'C', 'S'], C: ['B'], S: ['B'] };
+    var where = { red: 'A', blue: 'C' };
+
+    /* the side track needs to look like somewhere you could stop */
+    ink(S('rect', { x: 126, y: 96, width: 6, height: 24, rx: 3, fill: '#F0466F' }, st), 2);
+
+    function taken(k) {
+      return where.red === k ? 'red' : (where.blue === k ? 'blue' : null);
+    }
+    function settle(name, art) {
+      var s = SLOT[where[name]];
+      glide(art, s[0], s[1], 240);
+    }
+    var art = {};
+    art.red = loco(st, SLOT.A[0], SLOT.A[1], '#F0466F', false);
+    art.blue = loco(st, SLOT.C[0], SLOT.C[1], '#6EC6E8', true);
+
+    function wire(name) {
+      drag(art[name], {
+        clamp: [46, 108, 314, 210],
+        onDrop: function (x, y, back) {
+          var from = where[name], best = null, bd = 1e9, k;
+          for (k in SLOT) {
+            if (!SLOT.hasOwnProperty(k)) { continue; }
+            var d = Math.abs(SLOT[k][0] - x) + Math.abs(SLOT[k][1] - y);
+            if (d < bd) { bd = d; best = k; }
+          }
+          var ok = best && best !== from && bd < 96 &&
+                   !taken(best) && NEXT[from].indexOf(best) >= 0;
+          if (!ok) { BS.nope(art[name]); glide(art[name], back.x, back.y, 240); return; }
+          where[name] = best;
+          settle(name, art[name]);
+          BS.SFX.drop();
+          BS.later(function () {
+            if (where.red === 'C' && where.blue === 'A') { BS.win(); }
+          }, 300);
+        }
+      });
+    }
+    wire('red'); wire('blue');
+    A.lift(st);
   }
 },
 
-/* ---------- the clue is a movement ---------- */
+/* 63 — every leaf, once.
+   A Hamiltonian path on eight leaves. The wrong routes do not lose, they
+   strand her: the caterpillar ends up somewhere with nothing left to reach,
+   which is a far better teacher than a buzzer. */
 {
-  id: 'n-egg', d: 14,
-  ask: 'One egg is about to hatch. Which one?',
-  hint: 'Do not tap yet. Just watch them for a little while.',
-  tell: 'The egg on the right keeps wobbling. Tap it.',
-  why: 'You watched before you touched. The clue was a movement, not a picture.',
+  d: 67.5,
+  ask: 'The caterpillar is hungry. Eat every leaf. She will not crawl over a leaf she has already eaten.',
+  hint: 'Look for the leaves that only have one way in. Leave those for last and you will get stuck.',
+  tell: 'Go right, down, right, down, left, left, up. Sweep round the outside, then finish in the corner.',
+  why: 'You planned a route that never painted itself into a corner. That is the whole trick.',
   build: function (st) {
-    scene(st, 'meadow', { sun: 'sun', flowers: false, groundY: 214 });
-    var xs = [76, 180, 284], hot = 2, done = false, eggs = [], i;
-    for (i = 0; i < 3; i++) {
+    scene(st, 'meadow', { sun: 'sun', clouds: true, hills: false, ground: false, vignette: false });
+    /* three by three with the top-right leaf missing */
+    var GRID = [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]];
+    function cx(c) { return 92 + c * 88; }
+    function cy(r) { return 74 + r * 76; }
+    function idx(c, r) {
+      for (var i = 0; i < GRID.length; i++) { if (GRID[i][0] === c && GRID[i][1] === r) { return i; } }
+      return -1;
+    }
+    var leafArt = [], eaten = [], at = 0, busy = false, i;
+    for (i = 0; i < GRID.length; i++) {
       (function (i) {
-        ink(S('ellipse', { cx: xs[i], cy: 236, rx: 50, ry: 17, fill: '#9C6B3F' }, st), 4);
-        var g = G(st, xs[i], 204);
-        pad(g, 86, 98, -6);
-        var inner = S('g', {}, g);
-        ink(S('ellipse', { cx: 0, cy: -8, rx: 27, ry: 35, fill: '#FFF6E6' }, inner), 4);
-        S('ellipse', { cx: -9, cy: -22, rx: 8, ry: 11, fill: '#FFFFFF', opacity: '.8' }, inner);
-        S('circle', { cx: 8, cy: 2, r: 3.4, fill: '#E9D9BC' }, inner);
-        S('circle', { cx: -6, cy: 10, r: 2.6, fill: '#E9D9BC' }, inner);
-        S('circle', { cx: 12, cy: -16, r: 2.4, fill: '#E9D9BC' }, inner);
-        eggs.push(inner);
-        var rim = ink(S('path', { d: 'M' + (xs[i] - 50) + ',236 q50,26 100,0 q-10,22 -50,22 q-40,0 -50,-22 Z', fill: '#B07A4C' }, st), 4);
-        rim.style.pointerEvents = 'none';
-        tap(g, function () {
-          if (done) { return; }
-          if (i !== hot) { BS.nope(g); return; }
-          done = true;
-          inner.setAttribute('opacity', '0');
-          ink(S('path', { d: 'M-27,2 l9,-9 l9,9 l9,-9 l9,9 l9,-9 l9,9 q-2,26 -27,26 q-25,0 -27,-26 Z', fill: '#FFF6E6' }, g), 4);
-          animal(st, { kind: 'duck', x: xs[i], y: 178, size: 12, fill: '#FFE066', mood: 'wow', shadow: false });
-          st.appendChild(g); st.appendChild(rim);
-          A.burst(st, xs[i], 180, { n: 8, r: 46 });
-          BS.SFX.pop();
-          later(BS.win, 520);
+        var g = G(st, cx(GRID[i][0]), cy(GRID[i][1]));
+        var body = S('g', {}, g);
+        ink(S('ellipse', { cx: 0, cy: 0, rx: 31, ry: 25, fill: '#5FD08A' }, body), 3.4);
+        ink(S('path', { d: 'M-24,6 Q0,-8 24,-6', fill: 'none' }, body), 2.4)
+          .setAttribute('stroke', '#3C9E62');
+        leafArt.push({ g: g, body: body });
+        eaten.push(false);
+      })(i);
+    }
+    var bug = grub(st, cx(0), cy(0));
+
+    function reset() {
+      for (var k = 0; k < GRID.length; k++) {
+        eaten[k] = false;
+        leafArt[k].body.setAttribute('opacity', '1');
+      }
+      eaten[0] = true;
+      leafArt[0].body.setAttribute('opacity', '.28');
+      at = 0;
+      place(bug, cx(0), cy(0));
+    }
+    function movesFrom(k) {
+      var c = GRID[k][0], r = GRID[k][1], n = 0, D = [[1, 0], [-1, 0], [0, 1], [0, -1]], j, t;
+      for (j = 0; j < 4; j++) {
+        t = idx(c + D[j][0], r + D[j][1]);
+        if (t >= 0 && !eaten[t]) { n++; }
+      }
+      return n;
+    }
+    for (i = 0; i < GRID.length; i++) {
+      (function (i) {
+        var z = G(st, cx(GRID[i][0]), cy(GRID[i][1]));
+        pad(z, 76, 66);
+        tap(z, function () {
+          if (busy) { return; }
+          var dc = Math.abs(GRID[i][0] - GRID[at][0]), dr = Math.abs(GRID[i][1] - GRID[at][1]);
+          if (eaten[i] || dc + dr !== 1) { BS.nope(bug); return; }
+          busy = true;
+          at = i; eaten[i] = true;
+          leafArt[i].body.setAttribute('opacity', '.28');
+          glide(bug, cx(GRID[i][0]), cy(GRID[i][1]), 250);
+          BS.SFX.grab();
+          BS.later(function () {
+            busy = false;
+            var left = 0, k;
+            for (k = 0; k < GRID.length; k++) { if (!eaten[k]) { left++; } }
+            if (left === 0) { BS.win(); return; }
+            /* stranded: nothing reachable, so put her back and let her retry */
+            if (movesFrom(at) === 0) {
+              BS.nope(bug);
+              busy = true;
+              BS.later(function () { reset(); busy = false; }, 520);
+            }
+          }, 300);
         });
       })(i);
     }
-    /* a short shiver every couple of seconds, in whole degrees */
-    var t0 = Date.now(), last = 0;
-    A.tick(function (t) {
-      if (done) { return true; }
-      var ph = (t - t0) % 2300;
-      var a = ph < 440 ? Math.round(Math.sin(ph / 440 * Math.PI * 4) * 7) : 0;
-      if (a !== last) { last = a; eggs[hot].setAttribute('transform', 'rotate(' + a + ' 0 26)'); }
-      return false;
-    });
+    reset();
+    A.lift(st);
   }
 },
 
-/* ---------- a reflection is not another one ---------- */
+/* 64 — tell the bee where to go.
+   She writes the whole plan down before anything moves, which is the part
+   that makes it different from every other tap-and-see puzzle in here.
+   Only one order of the five arrows gets through. */
 {
-  id: 'n-moon', d: 17,
-  ask: 'How many moons are there?',
-  hint: 'One of them is wobbly, and one is on a pole. Are those really moons?',
-  tell: 'Only the one in the sky. The one in the water is its reflection, and the other is a lamp. One.',
-  why: 'A reflection is a picture of the thing, not another one of it.',
+  d: 75,
+  ask: 'Plan the bee’s trip to the flower first, then send her. She cannot fly over a rock.',
+  hint: 'Trace the route with your finger before you tap anything. Which way does she have to start?',
+  tell: 'Up, up, then right, right, right.',
+  why: 'You wrote the whole journey down before she moved. Working it out first is called planning.',
   build: function (st) {
-    scene(st, 'night', { sun: 'moon', hills: true, groundY: 206, ground: '#3E3372' });
-    ink(S('ellipse', { cx: 196, cy: 252, rx: 132, ry: 36, fill: '#2F5F9E' }, st), 4);
-    S('circle', { cx: 232, cy: 250, r: 19, fill: '#EFE3C0', opacity: '.85' }, st);
+    scene(st, 'meadow', { clouds: true, hills: false, ground: false, vignette: false });
+    var COLS = 4, ROWS = 3;
+    function gx(c) { return 78 + c * 54; }
+    function gy(r) { return 48 + r * 54; }
+    var ROCK = [[1, 1], [2, 2]];
+    function isRock(c, r) {
+      for (var i = 0; i < ROCK.length; i++) { if (ROCK[i][0] === c && ROCK[i][1] === r) { return true; } }
+      return false;
+    }
+    var c, r;
+    for (r = 0; r < ROWS; r++) {
+      for (c = 0; c < COLS; c++) {
+        ink(S('rect', { x: gx(c) - 24, y: gy(r) - 24, width: 48, height: 48, rx: 8,
+          fill: (c + r) % 2 ? '#CFEBD2' : '#E2F4E4' }, st), 2);
+      }
+    }
+    for (r = 0; r < ROCK.length; r++) {
+      var rg = G(st, gx(ROCK[r][0]), gy(ROCK[r][1]));
+      ink(S('path', { d: 'M-19,14 q-6,-16 6,-22 q14,-8 21,4 q6,12 -4,18 Z', fill: '#9C93B0' }, rg), 3);
+      S('path', { d: 'M-9,-2 q7,-6 14,0', fill: 'none', stroke: '#7A7192', 'stroke-width': 2.4 }, rg);
+    }
+    flowerArt(st, gx(3), gy(0));
+    var bee = beeArt(st, gx(0), gy(2));
+
+    var QN = 5, queue = [], slots = [], running = false;
+    function slotX(i) { return 120 + i * 32; }
+    for (c = 0; c < QN; c++) {
+      (function (i) {
+        var g = G(st, slotX(i), 222);
+        ink(S('rect', { x: -14, y: -14, width: 28, height: 28, rx: 6, fill: '#FFF6E6', opacity: '.8' }, g), 2.4)
+          .setAttribute('stroke-dasharray', '5 4');
+        slots.push(S('g', {}, g));
+      })(c);
+    }
+    function arrow(parent, up) {
+      if (up) { ink(S('path', { d: 'M0,-9 L8,3 L3,3 L3,9 L-3,9 L-3,3 L-8,3 Z', fill: '#F5A623' }, parent), 2.2); }
+      else { ink(S('path', { d: 'M9,0 L-3,8 L-3,3 L-9,3 L-9,-3 L-3,-3 L-3,-8 Z', fill: '#F5A623' }, parent), 2.2); }
+    }
+    function paint() {
+      var i;
+      for (i = 0; i < QN; i++) {
+        A.clear(slots[i]);
+        if (i < queue.length) { arrow(slots[i], queue[i] === 'u'); }
+      }
+    }
+    function button(x, up) {
+      var g = G(st, x, 222);
+      ink(S('rect', { x: -19, y: -19, width: 38, height: 38, rx: 9, fill: '#FFE7A8' }, g), 3);
+      var ag = G(g, 0, 0);
+      ag.setAttribute('transform', 'translate(0,0) scale(1.25)');
+      arrow(ag, up);
+      pad(g, 46, 46);
+      tap(g, function () {
+        if (running || queue.length >= QN) { BS.nope(g); return; }
+        queue.push(up ? 'u' : 'r'); paint(); BS.SFX.tap();
+      });
+    }
+    button(50, true); button(310, false);
+
+    var go = G(st, 180, 270);
+    ink(S('rect', { x: -52, y: -19, width: 104, height: 38, rx: 10, fill: '#3FBF7F' }, go), 3.5);
+    txt('Go!', { x: 0, y: 7, 'font-size': 20, fill: '#FFF6E6' }, go);
+    pad(go, 118, 46);
+
+    var clr = G(st, 180, 222);
+    pad(clr, 190, 34);
+    tap(clr, function () {
+      if (running || !queue.length) { return; }
+      queue = []; paint(); BS.SFX.tap();
+    });
+
+    tap(go, function () {
+      if (running) { return; }
+      if (!queue.length) { BS.nope(go); return; }
+      running = true;
+      var pc = 0, pos = [0, 2];
+      function step() {
+        if (pc >= queue.length) { finish(); return; }
+        var nc = pos[0] + (queue[pc] === 'r' ? 1 : 0);
+        var nr = pos[1] - (queue[pc] === 'u' ? 1 : 0);
+        if (nc >= COLS || nr < 0 || isRock(nc, nr)) { finish(true); return; }
+        pos = [nc, nr]; pc++;
+        glide(bee, gx(nc), gy(nr), 250);
+        BS.SFX.grab();
+        BS.later(step, 290);
+      }
+      function finish(bumped) {
+        if (!bumped && pos[0] === 3 && pos[1] === 0) { BS.win(); return; }
+        BS.nope(bee);
+        BS.later(function () {
+          place(bee, gx(0), gy(2));
+          queue = []; paint(); running = false;
+        }, 560);
+      }
+      step();
+    });
+    paint();
+    A.lift(st);
+  }
+},
+
+/* 65 — the tilted jars.
+   Children draw the water parallel to the bottom of the jar, every time.
+   Both wrong jars are that mistake: one keeps the water square to the jar,
+   the other over-corrects and tips it the other way. */
+{
+  d: 42.5,
+  ask: 'All three jars are tipped the same way. Which one shows the water as it really would be?',
+  hint: 'Forget the jar for a moment. Think about the top of the water in a puddle, or in the bath.',
+  tell: 'The middle one. Water always lies flat, however you hold the jar.',
+  why: 'Water does not care which way the jar is turned. Its top stays flat, and that surprises nearly everybody.',
+  build: function (st) {
+    scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 250, vignette: false });
+    var TILT = 24;
+    /* local angle of the water surface inside each jar:
+       0 = square to the jar (the classic mistake)
+       -TILT = truly flat once the jar is tilted (the real one)
+       -2*TILT = tipped too far the other way */
+    var LOCAL = [0, -TILT, -TILT * 2];
+    var W = 62, HH = 96;
+    for (var i = 0; i < 3; i++) {
+      (function (i) {
+        var cxp = 74 + i * 106, cyp = 146;
+        var g = G(st, cxp, cyp);
+        g.setAttribute('transform', 'translate(' + cxp + ',' + cyp + ') rotate(' + TILT + ')');
+        /* glass */
+        ink(S('rect', { x: -W / 2, y: -HH / 2, width: W, height: HH, rx: 7, fill: '#F3FAFF', opacity: '.92' }, g), 3.5);
+        /* water: the jar rect clipped by a half-plane at the given angle */
+        var a = LOCAL[i] * Math.PI / 180;
+        var nx = -Math.sin(a), ny = Math.cos(a);
+        var surfaceAt = HH * .10;                 /* how full, along the normal */
+        var poly = [[-W / 2, -HH / 2], [W / 2, -HH / 2], [W / 2, HH / 2], [-W / 2, HH / 2]];
+        poly = clipHalf(poly, -nx, -ny, -surfaceAt);
+        if (poly.length > 2) {
+          S('path', { d: polyPath(poly), fill: '#6EC6E8' }, g);
+          ink(S('path', { d: polyPath(poly), fill: 'none' }, g), 2.6).setAttribute('stroke', '#2E7FA8');
+        }
+        /* re-draw the glass outline over the water, then the rim */
+        var gl = S('rect', { x: -W / 2, y: -HH / 2, width: W, height: HH, rx: 7, fill: 'none' }, g);
+        ink(gl, 3.5);
+        ink(S('line', { x1: -W / 2 + 3, y1: -HH / 2, x2: W / 2 - 3, y2: -HH / 2 }, g), 5)
+          .setAttribute('stroke', '#8A7BA8');
+        S('rect', { x: -W / 2 + 8, y: -HH / 2 + 10, width: 8, height: HH * .5, rx: 4, fill: '#FFFFFF', opacity: '.5' }, g);
+        pad(g, W + 26, HH + 26);
+        tap(g, function () { if (i === 1) { BS.win(); } else { BS.nope(g); } });
+      })(i);
+    }
+    A.lift(st);
+  }
+},
+
+/* 66 — the low sun.
+   Two separate ideas have to agree: shadows fall away from the light, and a
+   low sun makes a long one. Each wrong answer gets exactly one of them right. */
+{
+  d: 66.5,
+  ask: 'It is nearly evening and the sun is low. Drag the tree’s shadow to the right place.',
+  hint: 'Stand between a lamp and a wall. Which side of you does your shadow go?',
+  tell: 'The long one on the right, opposite the sun.',
+  why: 'A shadow falls away from the light, and the lower the sun the longer it stretches.',
+  build: function (st) {
+    scene(st, 'dusk', { sun: false, hills: true, ground: '#C79A5E', groundY: 196, tufts: false, vignette: false });
+    /* a low sun, on the left and close to the ground */
+    S('circle', { cx: 44, cy: 150, r: 52, fill: A.glow(st, '#FFD86B', .5) }, st);
+    ink(S('circle', { cx: 44, cy: 150, r: 25, fill: '#FFB03A' }, st), 4);
+
+    /* the tree */
+    var tg = G(st, 186, 150);
+    ink(S('rect', { x: -9, y: 6, width: 18, height: 44, rx: 4, fill: '#9A6E48' }, tg), 3.5);
+    ink(S('circle', { cx: 0, cy: -8, r: 34, fill: '#4FAF6D' }, tg), 4);
+    ink(S('circle', { cx: -22, cy: 8, r: 21, fill: '#5FC47D' }, tg), 3.5);
+    ink(S('circle', { cx: 23, cy: 6, r: 20, fill: '#5FC47D' }, tg), 3.5);
+
+    var ZONE = [
+      { x: 78, y: 226, rx: 46, ok: false },     /* long, but the wrong side */
+      { x: 186, y: 232, rx: 20, ok: false },    /* right side of nothing: midday */
+      { x: 290, y: 226, rx: 46, ok: true }      /* long, away from the sun */
+    ];
+    var i;
+    for (i = 0; i < ZONE.length; i++) {
+      var z = S('ellipse', { cx: ZONE[i].x, cy: ZONE[i].y, rx: ZONE[i].rx, ry: 13,
+        fill: '#FFFFFF', opacity: '.22' }, st);
+      ink(z, 2.6).setAttribute('stroke-dasharray', '7 6');
+    }
+    ink(S('rect', { x: 16, y: 264, width: 328, height: 30, rx: 12, fill: '#FFF6E6', opacity: '.35' }, st), 0);
+
+    var sh = G(st, 180, 279);
+    S('ellipse', { cx: 0, cy: 0, rx: 46, ry: 12, fill: '#3A2A50', opacity: '.6' }, sh);
+    pad(sh, 108, 34);
+    drag(sh, {
+      clamp: [56, 214, 304, 284],
+      onDrop: function (x, y, back) {
+        var best = -1, bd = 1e9, k;
+        for (k = 0; k < ZONE.length; k++) {
+          var d = Math.abs(ZONE[k].x - x) + Math.abs(ZONE[k].y - y);
+          if (d < bd) { bd = d; best = k; }
+        }
+        if (bd > 78) { glide(sh, back.x, back.y, 240); return; }
+        if (ZONE[best].ok) { glide(sh, ZONE[best].x, ZONE[best].y, 240); BS.win(); return; }
+        BS.nope(sh); glide(sh, back.x, back.y, 260);
+      }
+    });
+    A.lift(st);
+  }
+},
+
+/* 67 — off the edge.
+   "It drops straight down" is the answer almost every child gives, so that is
+   the first wrong path. The second is the cartoon one, where it hangs in the
+   air for a while first. */
+{
+  d: 48.5,
+  ask: 'The ball rolls off the table. Which line shows where it really goes?',
+  hint: 'It does not stop moving sideways just because the table ran out.',
+  tell: 'The middle one — it keeps going forwards while it falls, so the line curves.',
+  why: 'It kept its forward push and started falling at the same time. Both happen at once, so the path bends.',
+  build: function (st) {
+    scene(st, 'room', { hills: false, ground: '#C08D57', groundY: 244, vignette: false });
+    /* table */
+    ink(S('rect', { x: 22, y: 130, width: 152, height: 13, rx: 5, fill: '#B07A4C' }, st), 3.5);
+    ink(S('rect', { x: 36, y: 143, width: 14, height: 100, rx: 4, fill: '#9A6E48' }, st), 3);
+    ink(S('rect', { x: 146, y: 143, width: 14, height: 100, rx: 4, fill: '#9A6E48' }, st), 3);
+    /* the ball, at the lip, with speed lines behind it */
     var i;
     for (i = 0; i < 3; i++) {
-      ink(S('path', { d: 'M' + (204 + i * 4) + ',' + (242 + i * 8) + ' q14,-5 28,0 t28,0', fill: 'none' }, st), 3)
-        .setAttribute('stroke', '#2F5F9E');
+      ink(S('line', { x1: 96 - i * 17, y1: 112 + i * 5, x2: 122 - i * 17, y2: 112 + i * 5 }, st), 3)
+        .setAttribute('stroke', '#8A7BA8');
     }
-    ink(S('line', { x1: 56, y1: 214, x2: 56, y2: 128 }, st), 6).setAttribute('stroke', '#241534');
-    S('circle', { cx: 56, cy: 112, r: 34, fill: A.glow(st, '#FFE58A', .6) }, st);
-    ink(S('circle', { cx: 56, cy: 112, r: 17, fill: '#F4E4B0' }, st), 4);
-    BS.chips(['2', '1', '3', '0'], 1);
+    ink(S('circle', { cx: 166, cy: 116, r: 14, fill: '#F0466F' }, st), 3.5);
+    S('circle', { cx: 161, cy: 111, r: 4.6, fill: '#FFFFFF', opacity: '.5' }, st);
+
+    var PATH = [
+      'M170,132 L170,236',                                  /* straight down */
+      'M170,132 Q206,150 250,236',                           /* the real one */
+      'M170,130 L316,130 L316,236'                           /* cartoon: hangs, then drops */
+    ];
+    var LAND = [170, 250, 316];
+    for (i = 0; i < 3; i++) {
+      (function (i) {
+        var p = S('path', { d: PATH[i], fill: 'none', stroke: '#4A3A66', 'stroke-width': 3,
+          'stroke-dasharray': '6 7', 'stroke-linecap': 'round' }, st);
+        p.setAttribute('opacity', '.75');
+        var g = G(st, LAND[i], 258);
+        ink(S('circle', { cx: 0, cy: 0, r: 17, fill: '#FFF6E6' }, g), 3);
+        S('circle', { cx: 0, cy: 0, r: 7, fill: ['#8A7BA8', '#8A7BA8', '#8A7BA8'][i] }, g);
+        pad(g, 44, 44);
+        tap(g, function () { if (i === 1) { BS.win(); } else { BS.nope(g); } });
+      })(i);
+    }
+    A.lift(st);
   }
 },
 
-/* ---------- answer the question that was asked ---------- */
+/* 68 — the two bins.
+   Every colour in the left bin appears in the right bin, and every shape too.
+   The only thing that separates them is the dot, and the piece she is given
+   is a shape that appears in neither bin, so matching cannot rescue her. */
 {
-  id: 'n-eyes', d: 21,
-  ask: 'How many eyes are open?',
-  hint: 'Look at each owl in turn. One of them is doing something cheeky.',
-  tell: 'The first owl has two open, the sleepy one has none, and the winking one has one. Three.',
-  why: 'Six eyes, but only three were open. The question asked about the open ones.',
+  d: 62.5,
+  ask: 'These two bins were filled by a rule, and nobody will tell you what it is. Drop the last piece in the right bin.',
+  hint: 'The colours are in both bins. So are the shapes. Look for something smaller.',
+  tell: 'The left bin. Every piece in it has a dot in the middle.',
+  why: 'Colour and shape were in both bins, so neither could be the rule. You found the one thing that was not.',
   build: function (st) {
-    scene(st, 'night', { hills: false, ground: false });
-    ink(S('path', { d: 'M-6,206 Q180,186 366,204', fill: 'none' }, st), 14).setAttribute('stroke', '#241534');
-    ink(S('path', { d: 'M-6,206 Q180,186 366,204', fill: 'none' }, st), 8).setAttribute('stroke', '#8A5F3B');
-    animal(st, { kind: 'owl', x: 74, y: 152, size: 24, fill: '#C58B4F', shadow: false, blink: false });
-    var sl = animal(st, { kind: 'owl', x: 180, y: 148, size: 24, fill: '#B07A4C', mood: 'sleep', shadow: false, blink: false });
-    txt('z', { x: 30, y: -30, 'font-size': 15, fill: '#FFF6E6' }, sl.__body);
-    txt('z', { x: 44, y: -44, 'font-size': 20, fill: '#FFF6E6' }, sl.__body);
-    var w = animal(st, { kind: 'owl', x: 286, y: 152, size: 24, fill: '#D9A06A', shadow: false, blink: false });
-    var op = w.__eyes.open.childNodes, i;
-    for (i = 0; i < 4; i++) { op[i].setAttribute('opacity', '0'); }
-    w.__eyes.shut.setAttribute('opacity', '1');
-    w.__eyes.shut.childNodes[1].setAttribute('opacity', '0');
+    scene(st, 'candy', { hills: false, ground: false, vignette: false });
+    var LEFT = [
+      { k: 'square', c: '#F0466F' }, { k: 'triangle', c: '#6EC6E8' }, { k: 'circle', c: '#FFC93C' }
+    ];
+    var RIGHT = [
+      { k: 'square', c: '#6EC6E8' }, { k: 'triangle', c: '#FFC93C' }, { k: 'circle', c: '#F0466F' }
+    ];
+    function shape(parent, kind, size, fill, dot) {
+      var e;
+      if (kind === 'circle') { e = S('circle', { cx: 0, cy: 0, r: size, fill: fill }, parent); }
+      else if (kind === 'square') { e = S('rect', { x: -size, y: -size, width: size * 2, height: size * 2, rx: size * .2, fill: fill }, parent); }
+      else if (kind === 'diamond') { e = S('path', { d: 'M0,' + (-size * 1.14) + ' L' + size + ',0 L0,' + (size * 1.14) + ' L' + (-size) + ',0 Z', fill: fill }, parent); }
+      else { e = S('path', { d: 'M0,' + (-size * 1.08) + ' L' + size + ',' + (size * .78) + ' L' + (-size) + ',' + (size * .78) + ' Z', fill: fill }, parent); }
+      ink(e, 3);
+      if (dot) { S('circle', { cx: 0, cy: kind === 'triangle' ? size * .24 : 0, r: size * .28, fill: '#241534' }, parent); }
+      return e;
+    }
+    function bin(x, rim, list, dots) {
+      var g = G(st, x, 106);
+      ink(S('rect', { x: -74, y: -54, width: 148, height: 108, rx: 14, fill: '#FFF6E6' }, g), 4)
+        .setAttribute('stroke', rim);
+      ink(S('rect', { x: -74, y: -54, width: 148, height: 18, rx: 8, fill: rim }, g), 0);
+      for (var i = 0; i < list.length; i++) {
+        var sg = G(g, -46 + i * 46, 12);
+        shape(sg, list[i].k, 17, list[i].c, dots);
+      }
+      return g;
+    }
+    var bl = bin(94, '#3F7FBF', LEFT, true);
+    var br = bin(266, '#E8722F', RIGHT, false);
+
+    var piece = G(st, 180, 234);
+    shape(piece, 'diamond', 21, '#3FBF7F', true);
+    pad(piece, 62, 62);
+    drag(piece, {
+      clamp: [40, 84, 320, 254],
+      onDrop: function (x, y, back) {
+        var inL = Math.abs(x - 94) < 84 && Math.abs(y - 106) < 68;
+        var inR = Math.abs(x - 266) < 84 && Math.abs(y - 106) < 68;
+        if (inL) { glide(piece, 94, 82, 220); BS.win(); return; }
+        if (inR) { BS.nope(piece); glide(piece, back.x, back.y, 260); return; }
+        glide(piece, back.x, back.y, 240);
+      }
+    });
+    A.lift(st);
+  }
+},
+
+/* 69 — the machine.
+   Three worked examples, then one to do. Every wrong chip is a real mistake:
+   7 copies the answer above, 9 grabs the last example's answer instead of
+   working it out, 10 doubles the input. */
+{
+  d: 51.5,
+  ask: 'The machine changes every number the same way. What will come out?',
+  hint: 'Look at 2 and 5. Now check 4 and 7. Is the machine adding, or doubling?',
+  tell: 'It adds 3 every time, so 5 comes out as 8.',
+  why: 'You found the rule from three examples and then trusted it on a number you had never seen.',
+  build: function (st) {
+    scene(st, 'room', { hills: false, ground: false, vignette: false });
+    /* the machine */
+    ink(S('path', { d: 'M132,16 L228,16 L212,44 L148,44 Z', fill: '#8A7BA8' }, st), 3.5);
+    ink(S('rect', { x: 106, y: 44, width: 148, height: 74, rx: 12, fill: '#B6A9CE' }, st), 4);
+    var k;
+    for (k = 0; k < 3; k++) {
+      ink(S('circle', { cx: 134 + k * 46, cy: 72, r: 12, fill: '#FFE7A8' }, st), 3);
+      ink(S('line', { x1: 134 + k * 46, y1: 72, x2: 134 + k * 46 + (k === 1 ? 0 : (k ? 8 : -8)), y2: 72 - (k === 1 ? 10 : 6) }, st), 3);
+    }
+    ink(S('rect', { x: 142, y: 118, width: 76, height: 16, rx: 6, fill: '#8A7BA8' }, st), 3);
+    txt('+ ?', { x: 180, y: 108, 'font-size': 15, fill: '#4A3A66', opacity: '.8' }, st);
+
+    var EX = [[2, 5], [4, 7], [6, 9]];
+    for (k = 0; k < 3; k++) {
+      (function (k) {
+        var g = G(st, 68 + k * 112, 174);
+        ink(S('rect', { x: -50, y: -23, width: 100, height: 46, rx: 10, fill: '#FFF6E6' }, g), 3);
+        txt(EX[k][0] + '  →  ' + EX[k][1], { x: 0, y: 7, 'font-size': 19, fill: '#241534' }, g);
+      })(k);
+    }
+    var q = G(st, 180, 240);
+    ink(S('rect', { x: -78, y: -27, width: 156, height: 54, rx: 12, fill: '#FFE7A8' }, q), 3.5);
+    txt('5  →  ?', { x: 0, y: 9, 'font-size': 25, fill: '#241534' }, q);
+    BS.chips(['7', '8', '9', '10'], 1);
+  }
+},
+
+/* 70 — the sock drawer.
+   Pigeonhole. Two is the answer nearly everyone gives first, which is why it
+   is sitting there as the first chip. */
+{
+  /* Kept short on purpose: at 375x553 this banner is the tallest in the app,
+     and a fourth wrapped line eats most of the column's headroom. */
+  d: 78.5,
+  ask: 'Only red socks and blue socks are in here, and the light is off. How many must you grab to be sure two match?',
+  hint: 'Imagine the unluckiest possible grab. What is the worst that could come out first?',
+  tell: 'Three. The first two might not match, but a third has to match one of them.',
+  why: 'You did not count the socks — you counted the colours. With only two colours, three socks cannot all be different.',
+  build: function (st) {
+    scene(st, 'night', { sun: 'moon', hills: false, ground: false, vignette: false });
+    /* the two colours that exist, shown lit, off to the side */
+    function sock(parent, x, y, fill, dim) {
+      var g = G(parent, x, y);
+      ink(S('path', { d: 'M-11,-22 L11,-22 L11,8 q0,10 12,12 l8,3 q6,3 3,9 q-3,6 -10,4 l-22,-7 q-13,-5 -13,-19 Z',
+        fill: fill }, g), 3);
+      if (!dim) { S('rect', { x: -11, y: -22, width: 22, height: 8, rx: 3, fill: '#FFF6E6', opacity: '.6' }, g); }
+      return g;
+    }
+    ink(S('rect', { x: 20, y: 22, width: 118, height: 76, rx: 12, fill: '#2A2360' }, st), 3);
+    sock(st, 56, 62, '#F0466F', false);
+    sock(st, 104, 62, '#6EC6E8', false);
+
+    /* the drawer, in the dark: every sock the same grey */
+    ink(S('rect', { x: 66, y: 132, width: 228, height: 116, rx: 14, fill: '#4A4278' }, st), 4);
+    ink(S('rect', { x: 66, y: 132, width: 228, height: 20, rx: 8, fill: '#5D5490' }, st), 3);
+    ink(S('rect', { x: 160, y: 236, width: 40, height: 11, rx: 5, fill: '#8A7BA8' }, st), 3);
+    var i, P = [[104, 190], [148, 178], [192, 192], [236, 176], [126, 218], [214, 220]];
+    for (i = 0; i < P.length; i++) {
+      var s = sock(st, P[i][0], P[i][1], '#6E6699', true);
+      s.setAttribute('transform', 'translate(' + P[i][0] + ',' + P[i][1] + ') rotate(' + (i % 2 ? 14 : -12) + ')');
+      txt('?', { x: 0, y: 2, 'font-size': 15, fill: '#B9B2D6' }, s);
+    }
     BS.chips(['2', '3', '4', '6'], 1);
   }
 },
 
-/* ---------- make the thing you do not have ---------- */
+/* 71 — looking down on it.
+   The wrong answers are the two ways a child mis-reads a 3D drawing: counting
+   only the front row, and getting the count right but the corner wrong. */
 {
-  id: 'n-green', d: 23,
-  ask: 'The frog has lost his colour! Make him green again.',
-  hint: 'There is no green paint. But two of these make green together.',
-  tell: 'Drag the blue onto the yellow to mix green. Then drag the green onto the frog.',
-  why: 'Blue and yellow make green. Two things you had made the one thing you needed.',
+  d: 63.5,
+  ask: 'Look down on these blocks from straight above. Which shape do you see?',
+  hint: 'Forget how tall they are. Just ask which squares on the floor are covered.',
+  tell: 'The middle one. Three in a row, with the fourth block behind the middle one.',
+  why: 'You flattened a solid thing in your head and drew it from a view nobody showed you.',
   build: function (st) {
-    scene(st, 'water', { hills: false, ground: '#8ED6A0', groundY: 196, tufts: false });
-    ink(S('ellipse', { cx: 180, cy: 164, rx: 96, ry: 20, fill: '#5FD08A' }, st), 4);
-    var pale = animal(st, { kind: 'frog', x: 180, y: 112, size: 28, fill: '#E4E0EE', mood: 'sad', bob: false, shadow: false });
-    var green = animal(st, { kind: 'frog', x: 180, y: 112, size: 28, fill: '#5FD08A', bob: false, shadow: false });
-    green.setAttribute('opacity', '0');
-    green.style.pointerEvents = 'none';
-    var COL = { b: '#4A9BE8', y: '#FFD84A', r: '#F0466F', g: '#3FBF7F' };
-    var pots = [{ c: 'b', x: 70 }, { c: 'r', x: 180 }, { c: 'y', x: 290 }], done = false, i;
-    for (i = 0; i < 3; i++) {
-      ink(S('ellipse', { cx: pots[i].x, cy: 268, rx: 34, ry: 9, fill: '#FFF6E6' }, st), 3.5);
+    scene(st, 'candy', { hills: false, ground: false, vignette: false });
+    /* plan: (col,row) = (0,1) (1,1) (2,1) and (1,0) behind the middle */
+    var PLAN = [[1, 0], [0, 1], [1, 1], [2, 1]];
+    var TOP = '#7FD0EE', LT = '#3F9FC8', RT = '#5FB6DE';
+    var ox = 176, oy = 62, i, p;
+    /* back to front, or the near blocks get buried */
+    var order = PLAN.slice().sort(function (a, b) { return (a[0] + a[1]) - (b[0] + b[1]); });
+    for (i = 0; i < order.length; i++) {
+      p = order[i];
+      block(st, ox + (p[0] - p[1]) * 26, oy + (p[0] + p[1]) * 15, TOP, LT, RT);
     }
-    for (i = 0; i < 3; i++) {
-      (function (P) {
-        var g = G(st, P.x, 252);
-        P.g = g;
-        P.blob = ink(S('path', { d: 'M-24,2 q-4,-22 14,-24 q10,-8 20,2 q16,2 14,18 q0,16 -22,16 q-24,2 -26,-12 Z', fill: COL[P.c] }, g), 4);
-        S('ellipse', { cx: -6, cy: -10, rx: 9, ry: 5, fill: '#FFFFFF', opacity: '.4' }, g);
-        drag(g, { onDrop: function (x, y, back) {
-          if (done) { return; }
-          var k, Q;
-          if (hit(x, y, 180, 124, 62)) {
-            if (P.c !== 'g') { BS.nope(g); glide(g, back.x, back.y); return; }
-            done = true;
-            g.setAttribute('opacity', '0');
-            pale.setAttribute('opacity', '0'); green.setAttribute('opacity', '1');
-            A.burst(st, 180, 110, { n: 10, r: 60, cols: ['#5FD08A', '#FFF6E6', '#FFD84A'] });
-            BS.SFX.good();
-            later(BS.win, 420);
-            return;
-          }
-          for (k = 0; k < 3; k++) {
-            Q = pots[k];
-            if (Q === P || Q.gone || !hit(x, y, Q.x, 252, 36)) { continue; }
-            if ((P.c === 'b' && Q.c === 'y') || (P.c === 'y' && Q.c === 'b')) {
-              P.gone = true;
-              g.setAttribute('opacity', '0'); g.style.pointerEvents = 'none';
-              Q.c = 'g'; Q.blob.setAttribute('fill', COL.g);
-              A.burst(st, Q.x, 246, { n: 8, r: 40, cols: ['#3FBF7F', '#FFD84A', '#4A9BE8'] });
-              BS.SFX.good();
-              return;
-            }
-            BS.nope(g); glide(g, back.x, back.y);
-            return;
-          }
-          glide(g, back.x, back.y);
-        } });
-      })(pots[i]);
-    }
-  }
-},
-
-/* ---------- measure from your own feet ---------- */
-{
-  id: 'n-tall', d: 25,
-  ask: 'Who is really the tallest?',
-  hint: 'Imagine they all stepped down onto the grass.',
-  tell: 'The bear. Take away the boxes and he is far taller than the other two.',
-  why: 'Height is measured from your own feet. The boxes were cheating.',
-  build: function (st) {
-    scene(st, 'meadow', { hills: true, groundY: 250, clouds: true });
-    function crate(x, h) {
-      ink(S('rect', { x: x - 34, y: 250 - h, width: 68, height: h, rx: 5, fill: '#C98B52' }, st), 4);
-      ink(S('line', { x1: x - 34, y1: 250 - h + 12, x2: x + 34, y2: 250 - h + 12 }, st), 3).setAttribute('stroke', '#8A5F3B');
-      S('rect', { x: x - 28, y: 250 - h + 18, width: 10, height: Math.max(0, h - 26), rx: 4, fill: '#FFFFFF', opacity: '.18' }, st);
-    }
-    crate(70, 104); crate(182, 56);
-    var who = [
-      { k: 'mouse', x: 70, feet: 146, s: 11, f: '#C9BFD6', leg: 1.84, ok: false },
-      { k: 'cat', x: 182, feet: 194, s: 14, f: '#FFB03A', leg: 2.14, ok: false },
-      { k: 'bear', x: 292, feet: 250, s: 21, f: '#B07A4C', leg: 2.16, ok: true }
+    var SHAPES = [
+      [[0, 0], [1, 0], [2, 0]],                  /* only the front row */
+      [[0, 1], [1, 1], [2, 1], [1, 0]],          /* the real plan */
+      [[0, 1], [1, 1], [2, 1], [2, 0]]           /* right count, wrong corner */
     ];
-    for (var i = 0; i < 3; i++) {
-      (function (W) {
-        var g = G(st, W.x, W.feet - W.s * W.leg);
-        pad(g, 78, W.s * 4.2, W.s * .5);
-        animal(g, { kind: W.k, x: 0, y: 0, size: W.s, fill: W.f, shadow: false, bob: false });
-        tap(g, function () { if (W.ok) { BS.win(); } else { BS.nope(g); } });
-      })(who[i]);
-    }
+    options(st, 238, function (gg, i) {
+      cells(gg, SHAPES[i], 19, '#6EC6E8');
+    }, 1);
   }
 },
 
-/* ---------- fair means through the middle ---------- */
+/* 72 — two pieces, one square.
+   Counting the squares is not enough: two of the pieces add up to four and
+   only one pair actually fits. The interaction is new too — she has to hold
+   two choices in mind at once and commit to both. */
 {
-  id: 'n-pizza', d: 29,
-  ask: 'Cut the pizza so two friends get the same amount.',
-  hint: 'A fair cut goes right through the very middle. It does not have to be straight up and down.',
-  tell: 'The slanted cut. It is the only one that passes through the middle.',
-  why: 'Any cut through the middle makes two equal halves, even a wonky one.',
+  d: 57.5,
+  ask: 'Exactly two of these pieces fit together to make the square. Tap both of them.',
+  hint: 'Count the little squares first. Now check whether that pair would really fit, or leave a gap.',
+  tell: 'The corner piece and the single square.',
+  why: 'The right number of pieces is not the same as the right shape. You had to check the fit, not just the count.',
   build: function (st) {
-    scene(st, 'room', { hills: false, ground: false });
-    var cx = 172, cy = 158, i;
-    A.shadow(st, cx, cy + 84, 96, 14);
-    ink(S('circle', { cx: cx, cy: cy, r: 90, fill: '#E0A85A' }, st), 5);
-    ink(S('circle', { cx: cx, cy: cy, r: 76, fill: '#FFC93C' }, st), 3);
-    var tops = [[-38, -30], [30, -44], [44, 22], [-20, 40], [-50, 14], [8, -8], [14, 50], [-6, -54]];
-    for (i = 0; i < tops.length; i++) {
-      ink(S('circle', { cx: cx + tops[i][0], cy: cy + tops[i][1], r: 10, fill: '#E8464C' }, st), 2.6);
-    }
-    var cuts = [
-      { x1: cx - 44, y1: cy - 96, x2: cx - 44, y2: cy + 96, hx: cx - 44, hy: 40, ok: false },
-      { x1: cx - 98, y1: cy + 38, x2: cx + 98, y2: cy + 38, hx: 314, hy: cy + 38, ok: false },
-      { x1: cx - 70, y1: cy + 66, x2: cx + 70, y2: cy - 66, hx: cx + 98, hy: cy - 92, ok: true }
+    scene(st, 'candy', { hills: false, ground: false, vignette: false });
+    /* the target */
+    var t = G(st, 180, 62);
+    ink(S('rect', { x: -34, y: -34, width: 68, height: 68, rx: 8, fill: '#FFF6E6', opacity: '.75' }, t), 3.5)
+      .setAttribute('stroke-dasharray', '9 7');
+    ink(S('line', { x1: 0, y1: -34, x2: 0, y2: 34 }, t), 2).setAttribute('opacity', '.35');
+    ink(S('line', { x1: -34, y1: 0, x2: 34, y2: 0 }, t), 2).setAttribute('opacity', '.35');
+
+    /* L-tromino + single square = the 2x2. A 1x3 bar plus the single does not. */
+    var PIECES = [
+      { c: [[0, 0], [0, 1], [1, 1]], fill: '#F0466F' },      /* 0  the corner */
+      { c: [[0, 0], [1, 0], [2, 0]], fill: '#6EC6E8' },      /* 1  a bar of three */
+      { c: [[0, 0]], fill: '#FFC93C' },                       /* 2  one square */
+      { c: [[0, 0], [0, 1]], fill: '#3FBF7F' }                /* 3  a domino */
     ];
-    for (i = 0; i < 3; i++) {
-      (function (C) {
-        var ln = ink(S('line', { x1: C.x1, y1: C.y1, x2: C.x2, y2: C.y2, 'stroke-dasharray': '9 8' }, st), 4);
-        ln.style.pointerEvents = 'none';
-        var g = G(st, C.hx, C.hy);
-        pad(g, 54, 54);
-        ink(S('circle', { cx: 0, cy: 0, r: 20, fill: '#FFF6E6' }, g), 4);
-        var dx = C.x2 - C.x1, dy = C.y2 - C.y1, len = Math.sqrt(dx * dx + dy * dy);
-        ink(S('line', { x1: -dx / len * 11, y1: -dy / len * 11, x2: dx / len * 11, y2: dy / len * 11 }, g), 5)
-          .setAttribute('stroke', '#F0466F');
-        tap(g, function () {
-          if (!C.ok) { BS.nope(g); return; }
-          ln.removeAttribute('stroke-dasharray');
-          ln.setAttribute('stroke', '#FFF6E6'); ln.setAttribute('stroke-width', '7');
-          BS.SFX.good();
-          later(BS.win, 320);
-        });
-      })(cuts[i]);
-    }
-  }
-},
-
-/* ---------- find the one that breaks the rule ---------- */
-{
-  id: 'n-bead', d: 33,
-  ask: 'One bead is in the wrong place. Tap it.',
-  hint: 'Say it out loud from the left: red, blue, blue... where does it trip?',
-  tell: 'The eighth bead. It is red, but it should be blue.',
-  why: 'Red, blue, blue, over and over. Once you know the rule, the mistake sticks out.',
-  build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    var seq = [0, 1, 1, 0, 1, 1, 0, 0, 1], bad = 7, i;
-    ink(S('path', { d: 'M8,120 Q180,196 352,120', fill: 'none' }, st), 4).setAttribute('stroke', '#8A7BA8');
-    for (i = 0; i < 9; i++) {
-      (function (i) {
-        var x = 28 + i * 38, u = (x - 180) / 172, y = 158 - u * u * 38;
-        var g = G(st, x, y);
-        pad(g, 36, 70);
-        var e;
-        function paint(k) {
-          if (e && e.parentNode) { e.parentNode.removeChild(e); }
-          e = k === 0 ? ink(S('circle', { cx: 0, cy: 0, r: 15.5, fill: A.bodyFill(st, '#F0466F') }, g), 3.5)
-                      : ink(S('rect', { x: -14, y: -14, width: 28, height: 28, rx: 6, fill: A.bodyFill(st, '#4A9BE8') }, g), 3.5);
-        }
-        paint(seq[i]);
-        tap(g, function () {
-          if (i !== bad) { BS.nope(g); return; }
-          paint(1);
-          A.burst(st, x, y, { n: 6, r: 30 });
-          BS.SFX.good();
-          later(BS.win, 360);
-        });
-      })(i);
-    }
-  }
-},
-
-/* ---------- measure, do not trust your eyes ---------- */
-{
-  id: 'n-lines', d: 35,
-  ask: 'Which line is longer?',
-  hint: 'Your eyes can be tricked. You are allowed to move the lines.',
-  tell: 'Drag one line on top of the other. They are exactly the same.',
-  why: 'The little arrows fooled your eyes. Measuring beat looking.',
-  build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    function line(y, inward, col) {
-      var g = G(st, 180, y), k = inward ? 1 : -1, e;
-      pad(g, 200, 58);
-      ink(S('line', { x1: -78, y1: 0, x2: 78, y2: 0 }, g), 7).setAttribute('stroke', col);
-      for (e = -1; e <= 1; e += 2) {
-        ink(S('path', { d: 'M' + (e * 78 - e * k * 20) + ',-17 L' + (e * 78) + ',0 L' + (e * 78 - e * k * 20) + ',17', fill: 'none' }, g), 6)
-          .setAttribute('stroke', col);
-      }
-      drag(g);
-      return g;
-    }
-    line(96, false, '#F0466F');
-    line(196, true, '#4A9BE8');
-    BS.chips(['Top', 'Bottom', 'Same'], 2);
-  }
-},
-
-/* ---------- sharing ---------- */
-{
-  id: 'n-share', d: 37,
-  ask: 'Share the carrots so it is fair for every bunny.',
-  hint: 'Count all the carrots first. Then think how many each bunny should end up with.',
-  tell: 'Six carrots and three bunnies means two each. Move two carrots off the full plate.',
-  why: 'Six shared between three is two each. Fair means the same, not just "some".',
-  data: { start: [4, 1, 1] },
-  build: function (st) {
-    scene(st, 'meadow', { hills: false, groundY: 100, tufts: false, sun: false });
-    var px = [66, 180, 294], plates = [[], [], []], done = false, i, k;
-    var fills = ['#F5E2D0', '#E9D6F2', '#D6ECF5'];
-    for (i = 0; i < 3; i++) {
-      animal(st, { kind: 'bunny', x: px[i], y: 58, size: 14, fill: fills[i], shadow: false });
-      ink(S('rect', { x: px[i] - 50, y: 134, width: 100, height: 124, rx: 18, fill: '#FFF6E6' }, st), 4);
-    }
-    function slot(p, n) { return [px[p] - 30 + (n % 3) * 30, 168 + Math.floor(n / 3) * 56]; }
-    function layout(anim) {
-      for (var p = 0; p < 3; p++) {
-        for (var n = 0; n < plates[p].length; n++) {
-          var s = slot(p, n);
-          if (anim) { glide(plates[p][n], s[0], s[1], 200); } else { place(plates[p][n], s[0], s[1]); }
-        }
-      }
-    }
-    function carrot(p) {
-      var g = G(st, 0, 0);
-      pad(g, 28, 54);
-      ink(S('path', { d: 'M-2,-12 q-10,-10 -6,-16 M0,-12 q0,-12 2,-16 M2,-12 q10,-8 8,-14', fill: 'none' }, g), 3.5).setAttribute('stroke', '#3FBF7F');
-      ink(S('path', { d: 'M-9,-12 q9,-6 18,0 q-2,26 -9,36 q-7,-10 -9,-36 Z', fill: '#FF8A3D' }, g), 3.5);
-      g.__p = p;
-      plates[p].push(g);
-      drag(g, { onDrop: function (x) {
-        if (done) { return; }
-        var to = x < 123 ? 0 : (x < 237 ? 1 : 2), from = g.__p, at = plates[from].indexOf(g);
-        if (at >= 0) { plates[from].splice(at, 1); }
-        plates[to].push(g); g.__p = to;
-        layout(true);
-        if (plates[0].length === 2 && plates[1].length === 2 && plates[2].length === 2) {
-          done = true; later(BS.win, 380);
-        }
-      } });
-    }
-    var start = this.data.start;
-    for (i = 0; i < 3; i++) { for (k = 0; k < start[i]; k++) { carrot(i); } }
-    layout(false);
-  }
-},
-
-/* ---------- find the jump ---------- */
-{
-  id: 'n-hops', d: 39,
-  ask: 'She hops the same distance every time. Which stone is next?',
-  hint: 'Count how many stones she moves along on each hop.',
-  tell: 'She lands on 2, 5 and 8, so she moves 3 each time. Next is 11.',
-  why: 'Every hop was three stones. Find the size of the jump and you know the whole path.',
-  build: function (st) {
-    scene(st, 'water', { hills: false, ground: false });
-    var landed = { 2: 1, 5: 1, 8: 1 }, n, done = false;
-    function sx(n) { return 24 + (n - 1) * 24; }
-    ink(S('path', { d: 'M' + sx(2) + ',178 Q' + ((sx(2) + sx(5)) / 2) + ',112 ' + sx(5) + ',178', fill: 'none', 'stroke-dasharray': '6 7' }, st), 3.5)
-      .setAttribute('stroke', '#FFF6E6');
-    ink(S('path', { d: 'M' + sx(5) + ',178 Q' + ((sx(5) + sx(8)) / 2) + ',112 ' + sx(8) + ',178', fill: 'none', 'stroke-dasharray': '6 7' }, st), 3.5)
-      .setAttribute('stroke', '#FFF6E6');
-    var bun = animal(st, { kind: 'bunny', x: sx(8), y: 170, size: 11, fill: '#F5E2D0', shadow: false, bob: false });
-    for (n = 1; n <= 14; n++) {
-      (function (n) {
-        var g = G(st, sx(n), 204);
-        pad(g, 24, 64, 4);
-        ink(S('ellipse', { cx: 0, cy: 0, rx: 11, ry: 9, fill: landed[n] ? '#5FD08A' : '#D9D2E6' }, g), 2.6);
-        txt(String(n), { x: 0, y: 26, 'font-size': 12, fill: '#241534' }, g);
-        tap(g, function () {
-          if (done) { return; }
-          if (n !== 11) { BS.nope(g); return; }
-          done = true;
-          BS.SFX.hop();
-          glide(bun, sx(11), 170, 380);
-          later(BS.win, 520);
-        });
-      })(n);
-    }
-  }
-},
-
-/* ---------- two groups at once ---------- */
-{
-  id: 'n-hoops', d: 42,
-  ask: 'Where does the red ball belong?',
-  hint: 'It is red AND it is round. Is there a place that is inside both hoops?',
-  tell: 'Drop it in the middle, where the two hoops cross over.',
-  why: 'Some things belong to two groups at once. The overlap is where they live.',
-  build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    var L = [128, 128], R = [232, 128], rad = 84;
-    S('circle', { cx: L[0], cy: L[1], r: rad, fill: '#F0466F', opacity: '.14' }, st);
-    S('circle', { cx: R[0], cy: R[1], r: rad, fill: '#4A9BE8', opacity: '.14' }, st);
-    ink(S('circle', { cx: L[0], cy: L[1], r: rad, fill: 'none' }, st), 5).setAttribute('stroke', '#F0466F');
-    ink(S('circle', { cx: R[0], cy: R[1], r: rad, fill: 'none' }, st), 5).setAttribute('stroke', '#4A9BE8');
-    note(st, 'red things', 84, 34, 13);
-    note(st, 'round things', 276, 34, 13);
-    ink(S('rect', { x: 62, y: 92, width: 30, height: 30, rx: 4, fill: '#F0466F' }, st), 3.5);
-    ink(S('path', { d: 'M86,170 L106,138 L126,170 Z', fill: '#F0466F' }, st), 3.5);
-    ink(S('circle', { cx: 284, cy: 104, r: 16, fill: '#4A9BE8' }, st), 3.5);
-    ink(S('circle', { cx: 268, cy: 158, r: 16, fill: '#3FBF7F' }, st), 3.5);
-    var ball = G(st, 180, 262), done = false;
-    pad(ball, 56, 56);
-    ink(S('circle', { cx: 0, cy: 0, r: 19, fill: A.bodyFill(st, '#F0466F') }, ball), 4);
-    drag(ball, { onDrop: function (x, y, back) {
-      if (done) { return; }
-      var inL = Math.sqrt(Math.pow(x - L[0], 2) + Math.pow(y - L[1], 2)) < rad - 6;
-      var inR = Math.sqrt(Math.pow(x - R[0], 2) + Math.pow(y - R[1], 2)) < rad - 6;
-      if (inL && inR) { done = true; glide(ball, 180, 128); BS.SFX.good(); later(BS.win, 360); return; }
-      if (inL || inR) { BS.nope(ball); }
-      glide(ball, back.x, back.y);
-    } });
-  }
-},
-
-/* ---------- place value ---------- */
-{
-  id: 'n-digits', d: 44,
-  ask: 'Make the biggest number you can. Tap two cards to swap them.',
-  hint: 'The first place is worth the most. Which card deserves it?',
-  tell: '7 first, then 5, then 2. That makes 752.',
-  why: 'The same three cards can make 257 or 752. The seat at the front matters most.',
-  build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    var D = ['7', '5', '2'], C = ['#FFC93C', '#6EC6E8', '#FF8FA6'];
-    orderGame(st, 150, function (g, k) {
-      ink(S('rect', { x: -46, y: -58, width: 92, height: 116, rx: 14, fill: C[k] }, g), 4);
-      S('rect', { x: -38, y: -50, width: 40, height: 12, rx: 6, fill: '#FFFFFF', opacity: '.35' }, g);
-      txt(D[k], { x: 0, y: 28, 'font-size': 76, fill: '#241534' }, g);
-    }, [1, 2, 0]);
-  }
-},
-
-/* ---------- follow instructions in order ---------- */
-{
-  id: 'n-robot1', d: 46,
-  ask: 'The robot follows the arrows, one at a time. Where does it stop?',
-  hint: 'Put your finger on the robot and do one arrow at a time.',
-  tell: 'Up two, right two, down one, right one. Fourth square along, third row down.',
-  why: 'Six little steps, done in order, with nothing skipped. That is how every program runs.',
-  data: { cols: 5, rows: 4, start: [0, 3], moves: 'UURRDR' },
-  build: function (st) {
-    scene(st, 'lab', { hills: false, ground: false });
-    var D = this.data, u = 46, ox = 180 - D.cols * u / 2, oy = 96, i, r, c;
-    var DX = { U: 0, D: 0, L: -1, R: 1 }, DY = { U: -1, D: 1, L: 0, R: 0 }, ROT = { U: 0, R: 90, D: 180, L: 270 };
-    for (i = 0; i < D.moves.length; i++) {
-      var ag = G(st, 180 - (D.moves.length - 1) * 23 + i * 46, 46);
-      ink(S('rect', { x: -19, y: -19, width: 38, height: 38, rx: 9, fill: '#FFC93C' }, ag), 3.5);
-      ink(S('path', { d: 'M0,-12 L10,2 L4,2 L4,12 L-4,12 L-4,2 L-10,2 Z', fill: '#241534',
-        transform: 'rotate(' + ROT[D.moves.charAt(i)] + ')' }, ag), 1);
-    }
-    var end = D.start.slice(), path = [];
-    for (i = 0; i < D.moves.length; i++) {
-      end = [end[0] + DX[D.moves.charAt(i)], end[1] + DY[D.moves.charAt(i)]];
-      path.push(end);
-    }
-    function cxy(p) { return [ox + p[0] * u + u / 2, oy + p[1] * u + u / 2]; }
-    var cells = [];
-    for (r = 0; r < D.rows; r++) {
-      for (c = 0; c < D.cols; c++) {
-        ink(S('rect', { x: ox + c * u + 2, y: oy + r * u + 2, width: u - 4, height: u - 4, rx: 8,
-          fill: (r + c) % 2 ? '#EEF4FA' : '#FFFFFF' }, st), 2.6);
-      }
-    }
-    var s0 = cxy(D.start), bot = A.robot(st, { x: s0[0], y: s0[1] - 1, size: 13 }), done = false;
-    bot.style.pointerEvents = 'none';
-    /* hit layer last, above the robot, or a tap on its square lands on the art */
-    for (r = 0; r < D.rows; r++) {
-      for (c = 0; c < D.cols; c++) {
-        (function (r, c) {
-          var z = G(st, ox + c * u + u / 2, oy + r * u + u / 2);
-          pad(z, u, u);
-          cells.push(z);
-          tap(z, function () {
-            if (done) { return; }
-            if (c !== end[0] || r !== end[1]) { BS.nope(z); return; }
-            done = true;
-            BS.lock(true);
-            for (var k = 0; k < path.length; k++) {
-              (function (k) {
-                later(function () { var p = cxy(path[k]); glide(bot, p[0], p[1] - 1, 190); BS.SFX.tap(); }, k * 230);
-              })(k);
-            }
-            later(function () { BS.lock(false); BS.win(); }, path.length * 230 + 220);
-          });
-        })(r, c);
-      }
-    }
-  }
-},
-
-/* ---------- shapes hide inside shapes, again ---------- */
-{
-  id: 'n-squares', d: 48,
-  ask: 'How many squares can you see?',
-  hint: 'Four small ones. Is there a bigger one hiding around them?',
-  tell: 'Four small squares, plus the big one they make together. Five.',
-  why: 'The big square was built from the small ones. You counted the same lines twice, on purpose.',
-  build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    var g = G(st, 180, 150), cols = ['#6EC6E8', '#FFC93C', '#FF8FA6', '#3FBF7F'], i;
+    var RIGHT = [0, 2];
+    var picked = [], boxes = [];
+    var XS = [60, 140, 220, 300];
+    var i;
     for (i = 0; i < 4; i++) {
-      S('rect', { x: -96 + (i % 2) * 96, y: -96 + Math.floor(i / 2) * 96, width: 96, height: 96, fill: cols[i] }, g);
-    }
-    ink(S('rect', { x: -96, y: -96, width: 192, height: 192, rx: 4, fill: 'none' }, g), 6);
-    ink(S('path', { d: 'M0,-96 L0,96 M-96,0 L96,0', fill: 'none' }, g), 6);
-    BS.chips(['4', '5', '6', '8'], 1);
-  }
-},
-
-/* ---------- join two clues ---------- */
-{
-  id: 'n-race', d: 52,
-  ask: 'Who came first, second and third? Tap two to swap them.',
-  hint: 'Find the one that nobody finished in front of. That one is first.',
-  tell: 'Bunny, then Cat, then Bear.',
-  why: 'Nobody said Bunny beat Bear. You joined two clues together to know it.',
-  build: function (st) {
-    scene(st, 'meadow', { hills: false, ground: false });
-    var clues = ['Cat finished before Bear.', 'Bunny finished before Cat.'], i, g;
-    for (i = 0; i < 2; i++) {
-      g = G(st, 180, 26 + i * 40);
-      ink(S('rect', { x: -150, y: -16, width: 300, height: 32, rx: 10, fill: '#FFF6E6' }, g), 3);
-      txt(clues[i], { x: 0, y: 6, 'font-size': 16, fill: '#241534' }, g);
-    }
-    var xs = [66, 180, 294], lab = ['1st', '2nd', '3rd'], hs = [34, 24, 16];
-    for (i = 0; i < 3; i++) {
-      ink(S('rect', { x: xs[i] - 50, y: 296 - hs[i] - 14, width: 100, height: hs[i] + 20, rx: 6, fill: ['#FFC93C', '#D9D2E6', '#E0A85A'][i] }, st), 3.5);
-      txt(lab[i], { x: xs[i], y: 294, 'font-size': 15, fill: '#241534' }, st);
-    }
-    var spec = [{ k: 'bunny', f: '#F5E2D0', s: 15, dy: -4 }, { k: 'cat', f: '#FFB03A', s: 15, dy: -10 }, { k: 'bear', f: '#B07A4C', s: 16, dy: -12 }];
-    orderGame(st, 172, function (card, k) {
-      ink(S('rect', { x: -44, y: -48, width: 88, height: 96, rx: 12, fill: '#FFF6E6' }, card), 3.5);
-      animal(card, { kind: spec[k].k, x: 0, y: spec[k].dy, size: spec[k].s, fill: spec[k].f, bob: false, shadow: false });
-    }, [2, 0, 1], null, 96, 104);
-  }
-},
-
-/* ---------- ones across, tens down ---------- */
-{
-  id: 'n-hundred', d: 54,
-  ask: 'This piece broke off a number chart. Which number is missing?',
-  hint: 'Look at the numbers on its left and right. What sits between them?',
-  tell: '43, then the missing one, then 45. It is 44. Going down, the tens go up by one: 34, 44, 54.',
-  why: 'Across goes up in ones, down goes up in tens. The chart has two patterns woven together.',
-  build: function (st) {
-    scene(st, 'room', { hills: false, ground: false });
-    var u = 66, cx = 180, cy = 150;
-    var cells = [[0, -1, '34'], [-1, 0, '43'], [0, 0, '?'], [1, 0, '45'], [0, 1, '54']], i;
-    for (i = 0; i < cells.length; i++) {
-      var q = cells[i][2] === '?';
-      var g = G(st, cx + cells[i][0] * u, cy + cells[i][1] * u);
-      ink(S('rect', { x: -u / 2 + 2, y: -u / 2 + 2, width: u - 4, height: u - 4, rx: 8, fill: q ? '#FFF6E6' : '#FFC93C' }, g), 4);
-      if (!q) { S('rect', { x: -u / 2 + 9, y: -u / 2 + 9, width: 26, height: 8, rx: 4, fill: '#FFFFFF', opacity: '.35' }, g); }
-      txt(cells[i][2], { x: 0, y: 11, 'font-size': 30, fill: q ? '#8A7BA8' : '#241534' }, g);
-    }
-    BS.chips(['35', '44', '46', '53'], 1);
-  }
-},
-
-/* ---------- a shadow points away from the light ---------- */
-{
-  id: 'n-shadow', d: 56,
-  ask: 'The sun is hiding behind a cloud. Which one?',
-  hint: "Look at the tree's shadow. Which way is it pointing?",
-  tell: 'The shadow falls to the right, so the light comes from the left. Tap the left cloud.',
-  why: 'A shadow always points away from the light. The ground told you where to look.',
-  build: function (st) {
-    scene(st, 'day', { hills: true, groundY: 224 });
-    var sun = G(st, 58, 60);
-    S('circle', { cx: 0, cy: 0, r: 46, fill: A.glow(st, '#FFD86B', .6) }, sun);
-    ink(S('circle', { cx: 0, cy: 0, r: 22, fill: '#FFC93C' }, sun), 4);
-    S('path', { d: 'M176,236 L196,236 L332,262 L250,272 Z', fill: '#241534', opacity: '.3' }, st);
-    S('ellipse', { cx: 296, cy: 264, rx: 46, ry: 13, fill: '#241534', opacity: '.3' }, st);
-    ink(S('rect', { x: 172, y: 150, width: 26, height: 90, rx: 6, fill: '#8A5F3B' }, st), 4);
-    ink(S('circle', { cx: 150, cy: 144, r: 32, fill: '#57B96A' }, st));
-    ink(S('circle', { cx: 218, cy: 148, r: 30, fill: '#57B96A' }, st));
-    ink(S('circle', { cx: 184, cy: 116, r: 42, fill: '#4CA85E' }, st));
-    var xs = [58, 180, 302], ys = [60, 44, 60], done = false;
-    for (var i = 0; i < 3; i++) {
       (function (i) {
-        var g = cloud(st, xs[i], ys[i], 1.04);
-        pad(g, 110, 78);
+        var g = G(st, XS[i], 176);
+        var frame = ink(S('rect', { x: -36, y: -44, width: 72, height: 88, rx: 11, fill: '#FFF6E6' }, g), 3);
+        cells(g, PIECES[i].c, 25, PIECES[i].fill);
+        boxes.push(frame);
+        pad(g, 80, 96);
         tap(g, function () {
-          if (done) { return; }
-          if (i !== 0) { BS.nope(g); return; }
-          done = true;
-          glide(g, 150, 74, 500);
-          BS.SFX.good();
-          later(BS.win, 620);
+          var at = picked.indexOf(i);
+          if (at >= 0) {
+            picked.splice(at, 1);
+            frame.setAttribute('stroke', '#241534');
+            frame.setAttribute('stroke-width', 3);
+            BS.SFX.tap();
+            return;
+          }
+          if (picked.length >= 2) { BS.nope(g); return; }
+          picked.push(i);
+          frame.setAttribute('stroke', '#F5A623');
+          frame.setAttribute('stroke-width', 6);
+          BS.SFX.tap();
+          if (picked.length === 2) {
+            var a = picked.slice().sort(function (p, q) { return p - q; });
+            if (a[0] === RIGHT[0] && a[1] === RIGHT[1]) {
+              BS.later(function () { BS.win(); }, 180);
+            } else {
+              BS.nope(g);
+              (function (snapshot) {
+                BS.later(function () {
+                  for (var k = 0; k < snapshot.length; k++) {
+                    boxes[snapshot[k]].setAttribute('stroke', '#241534');
+                    boxes[snapshot[k]].setAttribute('stroke-width', 3);
+                  }
+                }, 520);
+              })(picked.slice());
+              picked = [];
+            }
+          }
         });
       })(i);
     }
+    txt('tap two', { x: 180, y: 250, 'font-size': 13, fill: '#241534', opacity: '.5' }, st);
+    A.lift(st);
   }
 },
 
-/* ---------- turned is not flipped ---------- */
+/* 73 — turned, not flipped.
+   The mirror image sits right next to the rotation, and it is the answer
+   almost every child picks. Telling them apart is the whole puzzle. */
 {
-  id: 'n-turned', d: 58,
-  ask: 'Which one is the blue shape, just turned around?',
-  hint: 'Turn the blue shape in your head, like turning a key. Flipping it over is not allowed.',
-  tell: 'The middle one. The first is flipped like a mirror, and the last is a different shape.',
-  why: 'Turning keeps a shape the same. Flipping makes its mirror twin, which is a different thing.',
+  d: 58,
+  ask: 'Which one is this same shape, just turned around?',
+  hint: 'You may turn the shape on the page, but you may not lift it up and flip it over.',
+  tell: 'The last one. The middle one looks right, but it is the shape back to front.',
+  why: 'Turning and flipping are not the same thing, and a flipped shape can never be turned back.',
   build: function (st) {
-    scene(st, 'candy', { hills: false, ground: false });
-    function shape(parent, cells, u, col) {
-      var mx = 0, my = 0, k;
-      for (k = 0; k < cells.length; k++) { mx = Math.max(mx, cells[k][0] + 1); my = Math.max(my, cells[k][1] + 1); }
-      for (k = 0; k < cells.length; k++) {
-        ink(S('rect', { x: (cells[k][0] - mx / 2) * u, y: (cells[k][1] - my / 2) * u, width: u, height: u, rx: 3, fill: col }, parent), 3);
-      }
-    }
-    var ref = G(st, 180, 78);
-    shape(ref, [[0, 0], [0, 1], [0, 2], [1, 2]], 30, '#4A9BE8');
-    var opts = [
-      [[0, 1], [1, 1], [2, 1], [0, 0]],
-      [[0, 0], [1, 0], [2, 0], [0, 1]],
-      [[0, 0], [1, 0], [2, 0], [1, 1]]
+    scene(st, 'candy', { hills: false, ground: false, vignette: false });
+    var BASE = [[0, 0], [0, 1], [0, 2], [1, 2]];
+    var g = G(st, 180, 92);
+    ink(S('rect', { x: -50, y: -60, width: 100, height: 120, rx: 12, fill: '#FFF6E6' }, g), 3);
+    cells(g, BASE, 30, '#8A6FD0');
+    /* [0] is a T, a genuinely different shape. [1] is the mirror, which is the
+       answer almost everyone gives. [2] is the real 90-degree turn.
+       Checked in code: [2] is a rotation of BASE, [1] is a reflection and NOT
+       a rotation, [0] is neither. */
+    var OPTS = [
+      [[0, 0], [1, 0], [2, 0], [1, 1]],           /* a T — not this shape at all */
+      [[1, 0], [1, 1], [1, 2], [0, 2]],           /* the mirror — the trap */
+      [[0, 0], [0, 1], [1, 0], [2, 0]]            /* the true 90-degree turn */
     ];
-    options(st, 222, function (g, i) { shape(g, opts[i], 22, '#FF8A3D'); }, 1, [66, 180, 294], 92);
+    options(st, 226, function (gg, i) {
+      cells(gg, OPTS[i], 21, '#8A6FD0');
+    }, 2);
   }
 }
 

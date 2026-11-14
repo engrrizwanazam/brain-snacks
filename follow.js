@@ -83,8 +83,33 @@
     A.at(d.g, d.x, d.y);
   }
 
+  /* When they stop, two of them can be standing on top of each other, and a
+     tap on the one she followed lands on the stranger above it: a heart lost
+     for being right. Nudge any that overlap apart before the taps are armed. */
+  function spread() {
+    var pass, a, b, dx, dy, d, push;
+    for (pass = 0; pass < 40; pass++) {
+      for (a = 0; a < dots.length; a++) {
+        for (b = a + 1; b < dots.length; b++) {
+          dx = dots[b].x - dots[a].x; dy = dots[b].y - dots[a].y;
+          d = Math.sqrt(dx * dx + dy * dy) || 1;
+          if (d < 50) {
+            push = (50 - d) / 2;
+            dots[a].x -= dx / d * push; dots[a].y -= dy / d * push;
+            dots[b].x += dx / d * push; dots[b].y += dy / d * push;
+          }
+        }
+      }
+      for (a = 0; a < dots.length; a++) {
+        dots[a].x = Math.max(34, Math.min(326, dots[a].x));
+        dots[a].y = Math.max(46, Math.min(372, dots[a].y));
+      }
+    }
+    for (a = 0; a < dots.length; a++) { A.at(dots[a].g, dots[a].x, dots[a].y); }
+  }
   function armTaps() {
     phase = 'pick';
+    spread();
     api.toast('Tap the ' + plan().keep + '!', '#6EC6E8');
     api.bar(0, false);
     for (var i = 0; i < dots.length; i++) {
@@ -142,6 +167,16 @@
   }
 
   BS.registerMode('follow', {
+    name: 'Follow', shelf: 'memory', color: '#7FC4E8', shade: '#5691B4',
+    keys: ['bs.followBest'], best: ['bs.followBest', 'round', 'rounds'], blurb: 'Keep your eye on them',
+    icon: function (a) {
+      var i;
+    var fq = [[14, 12, '#FFC93C'], [42, 8, '#8FA8C4'], [66, 18, '#FFC93C'],
+              [26, 32, '#8FA8C4'], [56, 34, '#8FA8C4']];
+    for (i = 0; i < fq.length; i++) {
+      ART.ink(ART.S('circle', { cx: fq[i][0], cy: fq[i][1], r: 7, fill: fq[i][2] }, a), 2.2);
+    }
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Follow');

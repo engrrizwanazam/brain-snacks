@@ -220,6 +220,102 @@ G.mirror = async () => { const out = []; let flat = 0;
     await wait(150); ok(/Perfect|sideways/.test(await toast()), 'mirror ' + r + ' (' + cols + 'x' + rows + (isFlat ? ' flat' : '') + ') not won: ' + await toast()); out.push(cols + 'x' + rows + (isFlat ? 'f' : '')); await wait(1100); }
   ok(flat > 0, 'the mirror never lay flat'); return 'mirrors ' + out.join(' ') + ' painted from the reflection of what was drawn'; };
 
+// ---------------- the six v12 games
+const waitToast = async (re, ms) => { for (let k = 0; k < (ms || 12000) / 60; k++) { if (re.test(await toast())) return true; await wait(60); } return false; };
+const clearToast = () => ev(() => { document.getElementById('ar-toast').textContent = ''; });
+G.cups = async () => { let n = 0; const sw = [];
+  for (let r = 0; r < 8; r++) { await waitToast(/Watch/); await wait(450);
+    const m = await ev(() => { const a = document.getElementById('arena'); const ball = [...a.children].find(g => g.tagName === 'g' && g.querySelector('circle[r="17"]')); const cups = [...a.children].filter(g => g.tagName === 'g' && g.querySelector('ellipse[rx="34"]'));
+      const lifted = cups.every(c => c.__y < 215); const mine = cups.find(c => Math.abs(c.__x - ball.__x) < 2); cups.forEach(c => { c.__mark = (c === mine); }); return { n: cups.length, lifted, has: !!mine }; });
+    ok(m.lifted && m.has, 'round ' + r + ': ball was never shown under a lifted cup ' + JSON.stringify(m)); await clearToast(); ok(await waitToast(/Which one/, 20000), 'round ' + r + ': shuffle never finished'); await wait(150);
+    const c = await ev(() => { const a = document.getElementById('arena'); const cups = [...a.children].filter(g => g.tagName === 'g' && g.querySelector('ellipse[rx="34"]')); const xs = cups.map(c => Math.round(c.__x)); const mk = cups.find(c => c.__mark); return { x: mk.__x, xs, down: cups.every(c => Math.abs(c.__y - 250) < 1) }; });
+    ok(c.down && new Set(c.xs).size === c.xs.length, 'cups not settled in separate places: ' + JSON.stringify(c)); await clearToast();
+    if (r === 2) { const h = await hearts(); const wx = c.xs.find(x => Math.abs(x - c.x) > 5); await tap(wx, 236); await wait(400); ok(await hearts() === h - 1, 'wrong cup cost no heart'); ok(/Under here/.test(await toast()), 'no reveal after a wrong cup'); await clearToast(); continue; }
+    await tap(c.x, 236); await wait(400); ok(/Found it/.test(await toast()), 'round ' + r + ': the cup the ball went under was refused'); const bx = await ev(() => [...document.getElementById('arena').children].find(g => g.tagName === 'g' && g.querySelector('circle[r="17"]')).__x); ok(Math.abs(bx - c.x) < 2, 'ball drawn at ' + bx + ' but the cup is at ' + c.x); n++; sw.push(m.n); await clearToast(); }
+  return n + ' balls followed by keeping hold of one cup through every swap; cups ' + sw.join(''); };
+G.follow = async () => { let n = 0; const sizes = [];
+  for (let r = 0; r < 6; r++) { await waitToast(/Remember/); await wait(250);
+    const m = await ev(() => { const a = document.getElementById('arena'); const col = g => { const e = [...g.querySelectorAll('ellipse')].find(e => /url/.test(e.getAttribute('fill') || '')); if (!e) return ''; const id = e.getAttribute('fill').match(/#([^)]+)/)[1]; return document.getElementById(id).children[1].getAttribute('stop-color'); };
+      const ds = [...a.children].filter(g => g.tagName === 'g'); ds.forEach(g => { g.__t = col(g) === '#FFC93C'; }); return { total: ds.length, keep: ds.filter(g => g.__t).length }; });
+    ok(m.keep >= 2 && m.total > m.keep, 'round ' + r + ': ' + m.keep + ' of ' + m.total + ' lit up'); sizes.push(m.keep + '/' + m.total); await clearToast(); ok(await waitToast(/Tap the/, 12000), 'round ' + r + ': they never stopped'); await wait(120);
+    const st = await ev(() => { const ds = [...document.getElementById('arena').children].filter(g => g.tagName === 'g' && g.__t !== undefined); const col2 = g => { const e = [...g.querySelectorAll('ellipse')].find(e => /url/.test(e.getAttribute('fill') || '')); return e ? e.getAttribute('fill') : ''; }; const same = new Set(ds.map(col2)).size; let close = 0; for (let i = 0; i < ds.length; i++) for (let j = i + 1; j < ds.length; j++) if (Math.hypot(ds[i].__x - ds[j].__x, ds[i].__y - ds[j].__y) < 48) close++; window.__close = close; return { t: ds.filter(g => g.__t).map(g => [g.__x, g.__y]), f: ds.filter(g => !g.__t).map(g => [g.__x, g.__y]), same, all: ds.map(g => [g.__x, g.__y]) }; });
+    ok(st.same === 1, 'the ones to follow still look different after they stop'); ok((await ev(() => window.__close)) === 0, 'round ' + r + ': critters stopped on top of each other');
+    await clearToast();
+    if (r === 1) { const h = await hearts(); const far = st.f.find(q => st.t.every(t => Math.hypot(t[0] - q[0], t[1] - q[1]) > 44)) || st.f[0]; await tap(far[0], far[1]); await wait(300); ok(await hearts() === h - 1, 'wrong critter cost no heart'); await clearToast(); continue; }
+    // two that overlap are tapped once each at a point nearer themselves
+    for (const q of st.t) { const near = st.all.filter(o => o !== q && Math.hypot(o[0] - q[0], o[1] - q[1]) < 40 && !(o[0] === q[0] && o[1] === q[1])); await tap(q[0], q[1]); await wait(140); }
+    await wait(250); const got = /All of them/.test(await toast()); if (got) n++; else { const lost = /Not that one/.test(await toast()); ok(lost, 'round ' + r + ': neither won nor lost'); if (lost) sizes[sizes.length - 1] += '(overlap)'; } await clearToast(); }
+  ok(n === 5, 'only ' + n + ' of 5 rounds followed cleanly'); return n + ' rounds followed by marking the ones that lit up and reading where they stopped; ' + sizes.join(' '); };
+G.howmany = async () => { let n = 0; const seen = [];
+  for (let r = 0; r < 10; r++) { await waitToast(/Look/); const c = await ev(() => { const g = [...document.getElementById('arena').children].find(g => g.tagName === 'g'); return g ? g.children.length : 0; });
+    for (let k = 0; k < 60; k++) { if (await ev(() => document.querySelectorAll('#ar-foot button').length)) break; await wait(60); }
+    const o = await ev(() => ({ opts: [...document.querySelectorAll('#ar-foot button')].map(b => +b.getAttribute('data-v')), hidden: [...document.getElementById('arena').children].find(g => g.tagName === 'g').getAttribute('opacity') }));
+    ok(o.hidden === '0', 'berries still visible when the question is asked'); ok(o.opts.includes(c) && new Set(o.opts).size === o.opts.length, 'round ' + r + ': ' + c + ' berries shown, choices ' + o.opts); seen.push(c); await clearToast();
+    if (r === 3) { const h = await hearts(); await ev(v => document.querySelector('#ar-foot button[data-v="' + v + '"]').click(), o.opts.find(v => v !== c)); await wait(250); ok(await hearts() === h - 1, 'wrong count cost no heart'); ok(new RegExp('There were ' + c).test(await toast()), 'right count not shown after a miss'); await clearToast(); continue; }
+    await ev(v => document.querySelector('#ar-foot button[data-v="' + v + '"]').click(), c); await wait(200); ok(/Yes/.test(await toast()), 'round ' + r + ': the count of berries drawn (' + c + ') was refused'); n++; await clearToast(); }
+  return n + ' right by counting the berries drawn: ' + seen.join(' '); };
+G.pile = async () => { let n = 0, conflicts = 0;
+  for (let r = 0; r < 14; r++) { let m = null; for (let k = 0; k < 40; k++) { m = await ev(() => { const gs = [...document.getElementById('arena').children].filter(g => g.tagName === 'g' && !g.querySelector('[pointer-events]')); const L = gs.filter(g => g.__x < 180), R = gs.filter(g => g.__x >= 180); const rad = a => a.length ? Math.max(...[...a[0].querySelectorAll('circle,ellipse')].map(e => +(e.getAttribute('r') || e.getAttribute('rx')))) : 0; return { l: L.length, r: R.length, rl: rad(L), rr: rad(R), sig: gs.map(g => Math.round(g.__x)).join() }; }); if (m.l && m.r && m.sig !== G.pile.last) break; await wait(60); }
+    G.pile.last = m.sig; ok(m.l !== m.r, 'piles are equal (' + m.l + ')'); const more = m.l > m.r ? 0 : 1; if ((more === 0 && m.rl < m.rr) || (more === 1 && m.rr < m.rl)) conflicts++;
+    if (r === 2) { const h = await hearts(); await tap(94 + (1 - more) * 172, 210); await wait(250); ok(await hearts() === h - 1, 'the smaller pile cost no heart'); await wait(750); continue; }
+    await tap(94 + more * 172, 210); await wait(200); n++; ok(parseInt(await score(), 10) === n, 'round ' + r + ': counted ' + m.l + ' v ' + m.r + ', score ' + await score()); await wait(420); }
+  ok(conflicts > 0, 'the pile with more never had the smaller stones'); return n + ' right by counting the stones drawn; in ' + conflicts + ' rounds the bigger-looking pile had fewer'; };
+G.colour = async () => { let n = 0, conflicts = 0; const HEX = ['#F0466F', '#6EC6E8', '#3FBF7F', '#FFC93C'], NAMES = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
+  const btn = await ev(() => [...document.querySelectorAll('#ar-foot button')].map(b => b.style.background)); ok(btn.length === 4, 'four colour buttons expected');
+  for (let r = 0; r < 16; r++) { const w = await ev(() => { const t = document.querySelector('#arena text[font-size="52"]'); return t ? [t.textContent, t.getAttribute('fill')] : null; }); if (!w) { await wait(80); r--; continue; }
+    const inkI = HEX.indexOf(w[1]), wordI = NAMES.indexOf(w[0]); ok(inkI >= 0 && wordI >= 0, 'unknown word or ink ' + w); if (inkI !== wordI) conflicts++;
+    if (inkI !== wordI && !G.colour.done) { G.colour.done = 1; const h = await hearts(); await ev(i => document.querySelector('#ar-foot button[data-i="' + i + '"]').click(), wordI); await wait(200); ok(await hearts() === h - 1, 'tapping the colour the word names cost no heart'); await wait(650); continue; }
+    await ev(i => document.querySelector('#ar-foot button[data-i="' + i + '"]').click(), inkI); await wait(150); n++; ok(parseInt(await score(), 10) === n, 'round ' + r + ': ink ' + w[1] + ' refused'); await wait(330); }
+  ok(conflicts > 0, 'word and ink never disagreed'); return n + ' right by reading the ink colour off the word; word and ink disagreed ' + conflicts + ' times'; };
+G.opp = async () => { let n = 0, both = 0;
+  for (let r = 0; r < 18; r++) { let b = null; for (let k = 0; k < 40; k++) { b = await ev(() => { const a = document.getElementById('arena'); const cs = (a.__chars || []).filter(g => g.ownerSVGElement); return cs.length ? { xs: cs.map(g => g.__x), id: cs[0].__tid || (cs[0].__tid = (window.__tc = (window.__tc || 0) + 1)) } : null; }); if (b && b.id !== G.opp.last) break; await wait(60); }
+    G.opp.last = b.id;
+    if (b.xs.length === 2) { both++; const h = await hearts(); await wait(1900); ok(await hearts() === h, 'waiting when both came out cost a heart'); n++; await wait(300); continue; }
+    const side = b.xs[0] < 180 ? 0 : 1;
+    if (r === 2) { const h = await hearts(); await tap(side ? 264 : 96, 296); await wait(250); ok(await hearts() === h - 1, 'tapping the rabbit\'s own burrow cost no heart'); await wait(650); continue; }
+    await tap(side ? 96 : 264, 296); await wait(200); n++; ok(parseInt(await score(), 10) === n, 'round ' + r + ': the other burrow was refused, score ' + await score()); await wait(330); }
+  return n + ' right by seeing which burrow the rabbit came out of; both came out ' + both + ' time(s) and waiting was rewarded'; };
+
+// outline fingerprint: tags of everything drawn for an animal, in order
+const FP = `(g => [...g.querySelectorAll('*')].filter(e => e.getAttribute('opacity') !== '0').map(e => e.tagName[0] + (e.tagName === 'path' ? (e.getAttribute('d') || '').replace(/[^A-Za-z]/g, '') : '')).join(''))`;
+G.shadow = async () => { let n = 0, flips = 0, fours = 0; const seen = [];
+  for (let r = 0; r < 14; r++) { let m = null;
+    for (let k = 0; k < 50; k++) { m = await ev(src => { const fp = eval(src); const a = document.getElementById('arena'); const sh = a.querySelector('[data-want]'); if (!sh) return null; if (!sh.__tid) sh.__tid = (window.__tc = (window.__tc || 0) + 1);
+        const fills = {}; sh.querySelectorAll('*').forEach(e => { const f = e.getAttribute('fill'); if (f && f !== 'none' && e.getAttribute('opacity') !== '0') fills[f] = 1; const s = e.getAttribute('stroke'); if (s && s !== 'none' && e.getAttribute('opacity') !== '0') fills[s] = 1; });
+        const opts = [...a.querySelectorAll('[data-opt]')].map(g => ({ k: g.getAttribute('data-opt'), x: g.__x, y: g.__y, fp: fp(g.lastChild.previousSibling) }));
+        return { id: sh.__tid, want: sh.getAttribute('data-want'), flip: sh.getAttribute('data-flip'), tf: sh.firstChild.firstChild.getAttribute('transform'), fp: fp(sh.firstChild), fills: Object.keys(fills), opts: opts }; }, FP);
+      if (m && m.id !== G.shadow.last) break; await wait(60); }
+    G.shadow.last = m.id; seen.push(m.want);
+    ok(m.fills.length === 1, 'round ' + r + ': the shadow shows more than one colour ' + m.fills);
+    ok(new Set(m.opts.map(o => o.k)).size === m.opts.length, 'round ' + r + ': the same animal offered twice');
+    const ks = m.opts.map(o => o.k); ok(!(ks.includes('bear') && ks.includes('panda')) && !(ks.includes('cat') && ks.includes('tiger')), 'round ' + r + ': two animals with the same outline offered ' + ks);
+    ok((m.flip === '1') === /scale\(-1/.test(m.tf || ''), 'round ' + r + ': flip flag and drawing disagree');
+    if (m.flip === '1') flips++; if (m.opts.length === 4) fours++;
+    for (let i = 0; i < m.opts.length; i++) for (let j = i + 1; j < m.opts.length; j++) ok(Math.abs(m.opts[i].x - m.opts[j].x) >= 80, 'round ' + r + ': option cards overlap');
+    const right = m.opts.find(o => o.k === m.want); ok(!!right, 'round ' + r + ': the shadow animal is not among the cards');
+    if (r === 3) { const h = await hearts(); const w = m.opts.find(o => o.k !== m.want); await tap(w.x, w.y); await wait(250); ok(await hearts() === h - 1, 'a wrong animal cost no heart'); await wait(800); continue; }
+    await tap(right.x, right.y); await wait(200); n++; ok(parseInt(await score(), 10) === n, 'round ' + r + ': the matching animal (' + m.want + ') was refused, score ' + await score()); await wait(450); }
+  ok(flips > 0, 'the shadow was never turned round'); ok(fours > 0, 'never reached four cards');
+  // a timeout must cost a heart
+  const h = await hearts(); await wait(6800); ok(await hearts() < h, 'running out of time cost no heart');
+  return n + ' shadows named (' + seen.join(' ') + '); shadow one flat colour every round, ' + flips + ' turned round, ' + fours + ' rounds with four cards'; };
+G.roundup = async () => { let n = 0; const seen = []; let three = 0;
+  for (let r = 0; r < 12; r++) { let m = null;
+    for (let k = 0; k < 50; k++) { m = await ev(() => { const a = document.getElementById('arena'); const bn = a.querySelector('[data-want]'); if (!bn) return null; if (!bn.__tid) bn.__tid = (window.__tc = (window.__tc || 0) + 1);
+        const an = [...a.querySelectorAll('[data-k]')].map(g => ({ k: g.getAttribute('data-k'), x: g.__x, y: g.__y }));
+        return { id: bn.__tid, want: bn.getAttribute('data-want'), an: an, opts: [...document.querySelectorAll('#ar-foot button')].map(b => +b.getAttribute('data-v')) }; });
+      if (m && m.id !== G.roundup.last) break; await wait(60); }
+    G.roundup.last = m.id; const c = m.an.filter(a => a.k === m.want).length; const kinds = new Set(m.an.map(a => a.k)).size; if (kinds >= 3) three++;
+    seen.push(c + '/' + m.an.length);
+    ok(c >= 1 && kinds >= 2, 'round ' + r + ': ' + c + ' wanted among ' + kinds + ' kinds');
+    let close = 1e9; for (let i = 0; i < m.an.length; i++) for (let j = i + 1; j < m.an.length; j++) close = Math.min(close, Math.hypot(m.an[i].x - m.an[j].x, m.an[i].y - m.an[j].y));
+    ok(close >= 55.9, 'round ' + r + ': two animals ' + Math.round(close) + ' apart'); ok(m.an.every(a => a.x >= 30 && a.x <= 330 && a.y >= 100 && a.y <= 370), 'round ' + r + ': an animal off the field');
+    ok(m.opts.includes(c) && new Set(m.opts).size === 4, 'round ' + r + ': ' + c + ' drawn, choices ' + m.opts);
+    if (r === 2) { const h = await hearts(); await ev(v => document.querySelector('#ar-foot button[data-v="' + v + '"]').click(), m.opts.find(v => v !== c)); await wait(250); ok(await hearts() === h - 1, 'a wrong count cost no heart'); ok(new RegExp('There were ' + c).test(await toast()), 'right count not shown after a miss'); await wait(1300); continue; }
+    await ev(v => document.querySelector('#ar-foot button[data-v="' + v + '"]').click(), c); await wait(200); n++; ok(parseInt(await score(), 10) === n, 'round ' + r + ': the count drawn (' + c + ') was refused'); await wait(600); }
+  ok(three > 0, 'never reached three kinds');
+  return n + ' right by counting the wanted animals drawn (wanted/total: ' + seen.join(' ') + '); nearest pair never under 56 apart'; };
+
 (async () => { let fails = 0;
   for (const k of Object.keys(G)) { if (ONLY && k !== ONLY) continue;
     t = await L.open(ROOT, 667); p = t.p; errs = []; let note = '';

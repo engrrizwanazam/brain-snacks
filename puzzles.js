@@ -126,9 +126,12 @@ BS.addPuzzles((function () {
     ink(S('rect', { x: 152, y: 150, width: 26, height: 104, fill: '#8A5F3B' }, st), 4);
     ink(S('path', { d: 'M165,168 L296,150', fill: 'none' }, st), 9);
     var owl = animal(st, { kind: 'owl', x: 258, y: 116, size: 22, fill: '#C58B4F', mood: 'sleep', shadow: false });
-    var z = G(owl.__body, 30, -26);
+    /* The z's used to drift up and to the RIGHT, straight underneath the sun
+       at (300,56) -- one was completely hidden and the other 41% covered.
+       The sun owns the top-right corner, so they drift left instead. */
+    var z = G(owl.__body, -30, -26);
     txt('z', { x: 0, y: 0, 'font-size': 14, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
-    txt('z', { x: 13, y: -14, 'font-size': 19, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
+    txt('z', { x: -13, y: -14, 'font-size': 19, fill: '#fff', stroke: '#241534', 'stroke-width': 3, 'paint-order': 'stroke' }, z);
     tap(owl, function () { BS.nope(owl); });
 
     var sun = G(st, 300, 56);

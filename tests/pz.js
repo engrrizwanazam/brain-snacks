@@ -74,11 +74,6 @@ add('Move the whole stack', async h => { // medium onto small must be refused, a
 // ferry helpers: read where a character is drawn
 const chX = (h, i) => h.ev(i => { const g = document.querySelector('#stage').__chars[i]; return Math.round(g.__x); }, i);
 const cross = async (h, loads, boatX) => { for (const [x, y] of loads) { await h.tap(x, y); await h.wait(330); } await h.tap(boatX, 240); await h.wait(1350); };
-add('The boat holds two', async h => { await cross(h, [[46, 66]], 136); await h.wait(900); h.ok(await chX(h, 0) === 46, 'fox was not sent back after an unsafe crossing'); },
-  async h => { await cross(h, [[46, 66], [46, 232]], 136); h.ok(await chX(h, 0) === 314, 'fox not drawn on far bank'); await cross(h, [], 224); await cross(h, [[46, 150]], 136); }, { t: 2500 });
-add('Only Dad can row', async h => { await h.tap(136, 240); await h.wait(300); await h.tap(46, 120); await h.wait(330); await h.tap(136, 240); await h.wait(900);
-    h.ok(await chX(h, 1) !== 314, 'a child crossed without Dad'); h.ok(await h.bad() >= 2, 'boat without a rower was not refused twice'); },
-  async h => { for (const y of [120, 182, 244]) { await cross(h, [[46, 52], [46, y]], 136); if (y !== 244) { await cross(h, [[314, 52]], 224); } } }, { t: 2500 });
 add('The boat holds one', async h => { await cross(h, [[46, 66]], 136); await h.wait(900); h.ok(await chX(h, 0) === 46, 'no reset after unsafe crossing'); },
   async h => { // BFS the real river puzzle, then play the answer
     const unsafe = (s, boat) => { const away = ['f', 'h', 'c'].filter(k => s[k] !== boat); return away.includes('h') && (away.includes('f') || away.includes('c')); };
@@ -93,8 +88,6 @@ const jug = target => [async h => { await h.tap(...(target === 3 ? JB.F5 : JB.F3
     for (const m of sol) { await h.tap(...JB[m]); await h.wait(320); }
     const lab = await h.ev(() => [...document.querySelectorAll('#stage text')].filter(t => t.getAttribute('font-size') === '21').map(t => t.textContent));
     h.ok(lab.includes(String(target)), 'jug labels on screen ' + lab + ' do not show ' + target); }];
-add('Measure exactly 2 cups', ...jug(2), { nb: 0 });
-add('Measure exactly 1 cup', ...jug(1), { nb: 0 });
 add('Measure exactly 4 cups', ...jug(4), { nb: 0 });
 add('folds up into this box', h => h.tap(68, 200), h => h.tap(180, 200));
 add('blocks are in this stack', ...chips(1, 0));
@@ -159,7 +152,6 @@ add('How many squares', ...chips(1, 0));
 add('Who came first', ...order(172, [66, 180], [180, 294]));
 add('number chart', ...chips(1, 0));
 add('sun is hiding behind', h => h.tap(302, 60), h => h.tap(58, 60));
-add('just turned around', ...opt3(222, 1, 0, [66, 180, 294]));
 // ---------------- pack 5
 const IC = (c, s) => async h => { await h.tap(56 + c * 68, 204); await h.wait(60); await h.tap(198 + s * 58, 204); await h.wait(330); };
 add('every different ice cream', async h => { await IC(0, 0)(h); await IC(0, 0)(h); await h.wait(300); const q = await h.ev(() => [...document.querySelectorAll('#stage text')].filter(t => t.textContent === '?').length); h.ok(q === 5, 'a repeated ice cream filled a second slot (empty slots: ' + q + ')'); },
@@ -171,21 +163,8 @@ add('one of each fruit', async h => { await h.tap(258, 62); await h.wait(350); c
     h.note('exhaustive search: ' + sols.length + ' solution(s)'); h.ok(sols.length === 1, 'fruit grid should have exactly one solution');
     for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) { if (given[r][c] >= 0) continue; for (let k = 0; k <= sols[0][r][c]; k++) { await h.tap(102 + c * 78, 62 + r * 78); await h.wait(310); } } }, { nb: 0, t: 2500 });
 const BEE = (c, r) => [84 + c * 64, 66 + r * 64];
-add('Visit every flower', async h => { await h.tap(...BEE(3, 2)); await h.wait(300); for (const q of [[0, 1], [1, 1], [1, 2], [0, 2]]) { await h.tap(...BEE(...q)); await h.wait(330); } await h.wait(1300);
-    const b = await h.ev(() => { const e = [...document.querySelectorAll('#stage ellipse')].find(e => e.getAttribute('fill') === '#FFD84A' && e.getAttribute('rx') === '13'); return [e.parentNode.__x, e.parentNode.__y]; });
-    h.ok(Math.abs(b[0] - 84) < 2 && Math.abs(b[1] - 62) < 2, 'bee did not go back to the start after a dead end: ' + b); },
-  async h => { let n = 0, first = null; const seen = new Set(['0:0']);
-    (function dfs(x, y, path) { if (path.length === 10) { n++; if (!first) first = path.slice(); return; } for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = x + dx, b = y + dy; if (a < 0 || b < 0 || a > 3 || b > 2 || (a === 1 && b === 0) || seen.has(a + ':' + b)) continue; seen.add(a + ':' + b); path.push([a, b]); dfs(a, b, path); path.pop(); seen.delete(a + ':' + b); } })(0, 0, []);
-    h.note('exhaustive search: ' + n + ' complete routes'); h.ok(n > 0, 'bee puzzle unsolvable');
-    for (const q of first) { await h.tap(...BEE(...q)); await h.wait(330); } }, { t: 2500 });
 add('How much is the dog worth', ...chips(2, 1));
 const RB = { U: 44, D: 98, L: 152, R: 206 };
-add('how to reach the battery', async h => { await h.tap(RB.R, 218); await h.wait(300); await h.tap(180, 270); await h.wait(1200); const r = await h.ev(() => { const g = document.querySelector('#stage').__chars[0]; return [g.__x, g.__y]; }); h.ok(Math.abs(r[0] - 114) < 2, 'robot went through a wall or did not return: ' + r); },
-  async h => { const blk = (x, y) => x < 0 || y < 0 || x > 3 || y > 2 || (x === 1 && y === 2) || (x === 2 && y === 0); const DX = { U: 0, D: 0, L: -1, R: 1 }, DY = { U: -1, D: 1, L: 0, R: 0 };
-    const sol = bfs([0, 2], s => s.join(), s => 'UDLR'.split('').filter(d => !blk(s[0] + DX[d], s[1] + DY[d])).map(d => [d, [s[0] + DX[d], s[1] + DY[d]]]), s => s[0] === 3 && s[1] === 0);
-    h.note('BFS: ' + sol.join('')); h.ok(sol.length <= 6, 'route longer than the program strip');
-    for (const d of sol) { await h.tap(RB[d], 218); await h.wait(300); } await h.tap(180, 270); await h.wait(2700);
-    const r = await h.ev(() => { const g = document.querySelector('#stage').__chars[0]; return [g.__x, g.__y]; }); h.ok(Math.abs(r[0] - 246) < 2 && Math.abs(r[1] - 31) < 2, 'robot not drawn on the battery: ' + r); }, { t: 3000 });
 const CAT = (c, r) => [87 + c * 62, 57 + r * 62];
 add('Seat a cat in every row', async h => { await h.tap(...CAT(0, 1)); await h.wait(300); for (const q of [[0, 2], [3, 3], [3, 1]]) { await h.tap(...CAT(...q)); await h.wait(300); } },
   async h => { const wet = new Set(['0:1', '1:2', '3:2', '1:3']); const sols = [];
@@ -193,8 +172,6 @@ add('Seat a cat in every row', async h => { await h.tap(...CAT(0, 1)); await h.w
     h.note('exhaustive search: ' + sols.length + ' solution(s) ' + JSON.stringify(sols)); h.ok(sols.length === 1, 'cat seating should have exactly one solution');
     for (let r = 1; r < 4; r++) { await h.tap(...CAT(sols[0][r], r)); await h.wait(300); } });
 add('jumps keep growing', ...chips(1, 0));
-add('flies straight over the blocks', ...opt3(232, 1, 0, [66, 180, 294]));
-add('lily patch doubles', ...chips(1, 0));
 add('Only ONE sign tells the truth', h => h.tap(66, 170), h => h.tap(180, 170));
 const NIM = n => async h => { await h.tap(n === 1 ? 110 : 250, 236); await h.wait(1750); };
 add('LAST berry wins', async h => { await NIM(2)(h); await NIM(1)(h); await h.wait(1800); const s = await h.ev(() => [...document.querySelectorAll('#stage text')].map(t => t.textContent).join('|')); h.ok(/Your turn!/.test(s), 'game did not reset after the monster won: ' + s); },
@@ -203,6 +180,86 @@ add('LAST berry wins', async h => { await NIM(2)(h); await NIM(1)(h); await h.wa
     const winFrom = left => { for (const t of [1, 2]) { if (t > left) continue; const l2 = left - t; if (l2 === 0) return [t]; const l3 = l2 - mon(l2); if (l3 === 0) continue; const r = winFrom(l3); if (r) return [t].concat(r); } return null; };
     const plan = winFrom(7); h.note('winning line for the child: ' + plan); h.ok(!!plan, 'nim cannot be won by the child');
     for (const t of plan) await NIM(t)(h); }, { t: 2500 });
+
+// ---------------- v9 planning five (pack 3)
+add('Pay exactly 8', async h => { await h.tap(40, 236); await h.wait(300); await h.tap(96, 236); await h.wait(500); const t = await h.ev(() => [...document.querySelectorAll('#stage text')].find(e => e.getAttribute('font-size') === '30').textContent); h.ok(t === '10', 'purse total shown as ' + t + ' after two fives'); },
+  async h => { for (const x of [40, 152, 264]) { await h.tap(x, 236); await h.wait(300); } const t = await h.ev(() => [...document.querySelectorAll('#stage text')].find(e => e.getAttribute('font-size') === '30').textContent); h.ok(t === '8', 'purse total shown as ' + t); }, { nb: 0 });
+add('Turn every lamp on', async h => { await h.tap(48 + 66, 150); await h.wait(400); },
+  async h => { const sol = bfs([0, 1, 0, 1, 0], s => s.join(''), s => [0, 1, 2, 3, 4].map(i => [i, s.map((v, j) => Math.abs(j - i) <= 1 ? 1 - v : v)]), s => s.every(v => v));
+    h.note('BFS: lamps ' + sol.map(i => i + 1).join(',')); for (const i of sol) { await h.tap(48 + i * 66, 150); await h.wait(300); }
+    const lit = await h.ev(() => [...document.querySelectorAll('#stage circle')].filter(c => c.getAttribute('r') === '22' && c.getAttribute('fill') === '#FFDE7A').length); h.ok(lit === 5, 'bulbs drawn lit: ' + lit); }, { nb: 0 });
+const STONE = k => [30 + k * 43, 160 + (k % 2 ? 16 : -16)];
+add('Hop the frog to the last stone', async h => { await h.tap(...STONE(3)); await h.wait(400); const x = await h.ev(() => document.querySelector('#stage').__chars[0].__x); h.ok(Math.abs(x - 30) < 2, 'frog jumped three stones: x=' + x); },
+  async h => { const HAS = [0, 1, 3, 4, 6, 7]; const sol = bfs(0, s => String(s), s => [1, 2].filter(d => HAS.includes(s + d)).map(d => [s + d, s + d]), s => s === 7); h.note('BFS: stones ' + sol.join(' '));
+    for (const k of sol) { await h.tap(...STONE(k)); await h.wait(380); const x = await h.ev(() => document.querySelector('#stage').__chars[0].__x); h.ok(Math.abs(x - STONE(k)[0]) < 2, 'frog not drawn on stone ' + k + ' (x=' + x + ')'); } });
+add('Sit all three on the bench', async h => { for (const x of [268, 180, 92]) { await h.tap(x, 250); await h.wait(420); } },
+  async h => { for (const x of [92, 180, 268]) { await h.tap(x, 250); await h.wait(420); } const ys = await h.ev(() => document.querySelector('#stage').__chars.map(g => Math.round(g.__y))); h.ok(ys.every(y => y === 150), 'animals not drawn on the bench: ' + ys); }, { nb: 0 });
+add('Ride the lift to floor 6', async h => { await h.tap(258, 270); await h.wait(400); },
+  async h => { const sol = bfs(1, s => String(s), s => [[3, 'U'], [-2, 'D']].filter(m => s + m[0] >= 1 && s + m[0] <= 6).map(m => [m[1], s + m[0]]), s => s === 6); h.note('BFS: ' + sol.join(''));
+    for (const m of sol) { await h.tap(m === 'U' ? 96 : 258, 270); await h.wait(470); } const y = await h.tfAt(180, 46); h.ok(!!y, 'lift car not drawn at floor 6'); });
+// ---------------- v10 pack 4
+add('Swap the two trains', async h => { await h.drag(72, 196, 288, 196, 10); await h.wait(500); const r = await h.tfAt(72, 196); h.ok(!!r, 'red train jumped past the blue one'); },
+  async h => { const SL = { A: [72, 196], B: [180, 196], C: [288, 196], S: [181, 122] }, NX = { A: ['B'], B: ['A', 'C', 'S'], C: ['B'], S: ['B'] };
+    const sol = bfs({ red: 'A', blue: 'C' }, s => s.red + s.blue, s => { const o = []; for (const n of ['red', 'blue']) for (const k of NX[s[n]]) { if (s.red === k || s.blue === k) continue; const t = Object.assign({}, s); t[n] = k; o.push([[n, s[n], k], t]); } return o; }, s => s.red === 'C' && s.blue === 'A');
+    h.note('BFS: ' + sol.length + ' moves, siding used: ' + sol.some(m => m[2] === 'S')); h.ok(sol.length === 6, 'trains should take 6');
+    for (const [n, a, b] of sol) { await h.drag(SL[a][0], SL[a][1], SL[b][0], SL[b][1], 8); await h.wait(420); h.ok(!!(await h.tfAt(SL[b][0], SL[b][1])), n + ' train not drawn at ' + b); } }, { t: 2500 });
+const LEAF = (c, r) => [92 + c * 88, 74 + r * 76];
+add('The caterpillar is hungry', async h => { await h.tap(...LEAF(2, 2)); await h.wait(300); for (const q of [[0, 1], [1, 1], [1, 0]]) { await h.tap(...LEAF(...q)); await h.wait(400); } await h.wait(1200); h.ok(!!(await h.tfAt(...LEAF(0, 0))), 'caterpillar not sent back to the first leaf after a dead end'); },
+  async h => { const GRID = ['0:0', '1:0', '0:1', '1:1', '2:1', '0:2', '1:2', '2:2']; let n = 0, first = null; const seen = new Set(['0:0']);
+    (function dfs(x, y, path) { if (path.length === 7) { n++; first = first || path.slice(); return; } for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) { const k = (x + dx) + ':' + (y + dy); if (!GRID.includes(k) || seen.has(k)) continue; seen.add(k); path.push([x + dx, y + dy]); dfs(x + dx, y + dy, path); path.pop(); seen.delete(k); } })(0, 0, []);
+    h.note('exhaustive search: ' + n + ' complete routes'); h.ok(n > 0, 'no route eats every leaf'); for (const q of first) { await h.tap(...LEAF(...q)); await h.wait(400); } }, { t: 2500 });
+add('Plan the bee', async h => { await h.tap(310, 222); await h.wait(200); await h.tap(180, 270); await h.wait(1500); h.ok(!!(await h.tfAt(78, 156)), 'bee not sent home after a plan that missed the flower'); },
+  async h => { const rock = (c, r) => (c === 1 && r === 1) || (c === 2 && r === 2); const sol = bfs([0, 2], s => s.join(), s => [['u', [s[0], s[1] - 1]], ['r', [s[0] + 1, s[1]]]].filter(m => m[1][0] < 4 && m[1][1] >= 0 && !rock(...m[1])), s => s[0] === 3 && s[1] === 0);
+    h.note('BFS: ' + sol.join('')); h.ok(sol.length === 5, 'bee plan should be 5 arrows');
+    await h.tap(50, 222); await h.wait(120); await h.tap(50, 222); await h.wait(200); const drawn = await h.ev(() => document.querySelectorAll('#stage path[fill="#F5A623"]').length); h.ok(drawn === 4, 'pressing the same arrow twice quickly drew ' + (drawn - 2) + ' arrow(s) in the plan');
+    for (const m of sol.slice(2)) { await h.tap(m === 'u' ? 50 : 310, 222); await h.wait(200); } await h.tap(180, 270); await h.wait(1650); h.ok(!!(await h.tfAt(78 + 3 * 54, 48)), 'bee not drawn on the flower'); }, { t: 3000 });
+add('nearly evening', async h => { await h.drag(180, 279, 78, 226); await h.wait(500); h.ok(!!(await h.tfAt(180, 279)), 'shadow did not go back'); }, h => h.drag(180, 279, 290, 226));
+add('These two bins', async h => { await h.drag(180, 234, 266, 106); await h.wait(500); h.ok(!!(await h.tfAt(180, 234)), 'piece did not go back'); }, h => h.drag(180, 234, 94, 106));
+add('Exactly two of these pieces', async h => { await h.tap(140, 176); await h.wait(200); await h.tap(300, 176); await h.wait(300); }, async h => { await h.tap(60, 176); await h.wait(200); await h.tap(220, 176); });
+// ---------------- v11 pack 5
+add('Deliver to the whole village', async h => { // walk into a dead end: the round must restart
+    const N = { A: [72, 110], B: [288, 110], C: [288, 214], D: [72, 214], E: [180, 46] }; const mid = (a, b, t) => [N[a][0] + (N[b][0] - N[a][0]) * t, N[a][1] + (N[b][1] - N[a][1]) * t];
+    await h.tap(...mid('A', 'E', .5)); await h.wait(300); h.ok(await h.bad() === 1, 'a road nowhere near the postman was walked');
+    for (const [a, b] of [['C', 'D'], ['D', 'A'], ['A', 'C']]) { await h.tap(...mid(a, b, a === 'A' ? .7 : .5)); await h.wait(420); } await h.wait(300); for (const [a, b] of [['C', 'B'], ['B', 'D']]) { await h.tap(...mid(a, b, b === 'D' ? .3 : .5)); await h.wait(420); } await h.wait(1200);
+    const g = await h.ev(() => [...document.querySelectorAll('#stage line')].filter(l => l.getAttribute('stroke') === '#3FBF7F').length); h.ok(g === 0, 'roads still green after being stranded: ' + g); },
+  async h => { const N = { A: [72, 110], B: [288, 110], C: [288, 214], D: [72, 214], E: [180, 46] }; const R = [['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A'], ['A', 'C'], ['B', 'D'], ['A', 'E'], ['B', 'E']]; let sol = null, count = 0;
+    (function dfs(at, used, path) { if (path.length === 8) { count++; sol = sol || path.slice(); return; } R.forEach((r, i) => { if (used[i] || (r[0] !== at && r[1] !== at)) return; used[i] = 1; path.push([i, at]); dfs(r[0] === at ? r[1] : r[0], used, path); path.pop(); used[i] = 0; }); })('C', [], []);
+    const deg = {}; R.forEach(r => r.forEach(n => { deg[n] = (deg[n] || 0) + 1; })); h.note('exhaustive search: ' + count + ' full rounds from the yellow house; odd junctions: ' + Object.keys(deg).filter(k => deg[k] % 2).join(','));
+    h.ok(count > 0, 'no round walks every road');
+    for (const [i, from] of sol) { const to = R[i][0] === from ? R[i][1] : R[i][0]; const diag = i === 4 || i === 5; const t = diag ? .28 : .5; await h.tap(N[from][0] + (N[to][0] - N[from][0]) * t, N[from][1] + (N[to][1] - N[from][1]) * t); await h.wait(420); } }, { t: 2500 });
+add('Lay all four dominoes', h => h.tap(64, 216), async h => { for (const x of [272, 64, 168]) { await h.tap(x, 216); await h.wait(300); } });
+add('Sort the pancakes', async h => { await h.tap(180, 156); await h.wait(400); await h.tap(180, 208); await h.wait(400); },
+  async h => { const flip = (s, i) => s.slice(0, i + 1).reverse().concat(s.slice(i + 1)); const sol = bfs([2, 3, 1], s => s.join(), s => [0, 1, 2].map(i => [i, flip(s, i)]), s => s.join() === '1,2,3'); h.note('BFS: flip at ' + sol.map(i => i + 1).join(', then '));
+    for (const i of sol) { await h.tap(180, 208 - (2 - i) * 26); await h.wait(380); } }, { nb: 0 });
+add('Slide the penguin', async h => { await h.tap(180, 212); await h.wait(400); h.ok(await h.bad() === 1, 'sliding into the wall was not refused'); await h.tap(180, 280); await h.wait(600); },
+  async h => { const ROCK = new Set(['1,0', '2,3', '0,2', '5,2', '3,3']); const slide = (s, d) => { let [c, r] = s; for (;;) { const nc = c + d[0], nr = r + d[1]; if (nc < 0 || nc > 5 || nr < 0 || nr > 3 || ROCK.has(nc + ',' + nr)) break; c = nc; r = nr; } return [c, r]; };
+    const D = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] }, B = { U: [180, 212], L: [144, 246], R: [216, 246], D: [180, 280] };
+    const sol = bfs([4, 0], s => s.join(), s => Object.keys(D).map(k => [k, slide(s, D[k])]).filter(m => m[1].join() !== s.join()), s => s[0] === 1 && s[1] === 2); h.note('BFS: ' + sol.join('')); h.ok(sol.length === 3, 'ice should take 3 slides, takes ' + sol.length);
+    for (const k of sol) { await h.tap(...B[k]); await h.wait(480); } await h.wait(1500); const pg = await h.ev(() => { const g = document.querySelector('#stage').__chars.find(c => c.__kind === 'penguin'); return [g.__x, g.__y]; }); h.ok(Math.abs(pg[0] - (58 + 42)) < 2 && Math.abs(pg[1] - (38 + 84 - 6)) < 2, 'penguin not drawn on the fish: ' + pg); });
+add('Weigh out exactly 2', async h => { await h.drag(286, 250, 258, 152); await h.wait(450); await h.drag(74, 250, 258, 152); await h.wait(600); },
+  async h => { await h.drag(286, 250, 258, 152); await h.wait(450); await h.drag(74, 250, 118, 152); await h.wait(450); const tf = await h.ev(() => [...document.querySelectorAll('#stage > g')].map(g => g.getAttribute('transform')).find(t => /translate\(180,136\) rotate/.test(t))); h.ok(/rotate\(0\)/.test(tf), 'beam not drawn level: ' + tf); });
+add('Make all three feeders equal', async h => { await h.tap(180, 150); await h.wait(250); await h.tap(72, 150); await h.wait(500); const l = await h.ev(() => [...document.querySelectorAll('#stage text')].filter(t => t.getAttribute('font-size') === '18').map(t => t.textContent).join()); h.ok(l === '10,1,1', 'a feeder with too little poured anyway: ' + l); },
+  async h => { const sol = bfs([10, 1, 1], s => s.join(), s => { const o = []; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) { if (a === b || s[b] === 0 || s[a] < s[b]) continue; const t = s.slice(); t[a] -= s[b]; t[b] += s[b]; o.push([[a, b], t]); } return o; }, s => s.join() === '4,4,4');
+    h.note('BFS: ' + sol.length + ' pours'); h.ok(sol.length === 4, 'feeders should take 4 pours'); const X = [72, 180, 288];
+    for (const [a, b] of sol) { await h.tap(X[a], 150); await h.wait(250); await h.tap(X[b], 150); await h.wait(420); } const l = await h.ev(() => [...document.querySelectorAll('#stage text')].filter(t => t.getAttribute('font-size') === '18').map(t => t.textContent).join()); h.ok(l === '4,4,4', 'labels show ' + l); });
+add('I am thinking of a number', async h => { await h.tap(180, 238); await h.wait(300); const t = await h.ev(() => [...document.querySelectorAll('#stage text')].map(t => t.textContent).join('|')); h.ok(/Higher than 50/.test(t) && /from 51 to 100/.test(t), 'no "higher" answer on screen: ' + t); },
+  async h => { // play by halving, reading only what the screen says
+    let n = 0; for (; n < 9; n++) { const st = await h.ev(() => { const tx = [...document.querySelectorAll('#stage text')].map(t => t.textContent); const m = tx.join('|').match(/from (\d+) to (\d+)/); return { lo: +m[1], hi: +m[2], cur: +tx.find(t => /^\d+$/.test(t) && document.querySelector('#stage text[font-size="26"]').textContent === t) }; });
+      const want = Math.floor((st.lo + st.hi) / 2); let d = want - st.cur; while (d !== 0) { const step = Math.abs(d) >= 10 ? 10 * Math.sign(d) : Math.sign(d); await h.tap(step === -10 ? 36 : step === -1 ? 100 : step === 1 ? 260 : 324, 238); await h.wait(90); d -= step; }
+      await h.tap(180, 238); await h.wait(250); if (await h.won() || await h.ev(() => /That is it/.test(document.querySelector('#stage').textContent))) break; }
+    h.note('found by halving in ' + (n + 1) + ' guesses'); h.ok(n < 7, 'halving needed more than 7 guesses'); }, { t: 2500 });
+add('Put the three colours', async h => { await h.tap(278, 206); await h.wait(300); },
+  async h => { const perms = []; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) for (let c = 0; c < 3; c++) perms.push([a, b, c]); const T = [[0, 2, 1], [2, 1, 0]]; const fit = perms.filter(p => T.every(t => t.every((v, i) => v !== p[i])));
+    h.note('codes that fit both tries (repeats allowed): ' + fit.length + ' -> ' + JSON.stringify(fit)); h.ok(fit.length === 1, 'colour code is not pinned down by the two tries'); for (let i = 0; i < 3; i++) for (let k = 0; k < fit[0][i]; k++) { await h.tap(96 + i * 46, 206); await h.wait(150); } await h.tap(278, 206); });
+
+// ---------------- pack 8 (v13)
+add('Somebody is hiding in the bush', async h => { const k = await h.ev(() => { const st = document.getElementById('stage'); const c = st.__chars[0]; const bb = c.getBoundingClientRect(), sb = st.getBoundingClientRect(); return (bb.top - sb.top) / sb.height; }); h.ok(k > 0.05 && k < 0.3, 'hidden animal\'s top is not above the bush: ' + k); await h.tap(72, 240); }, h => h.tap(180, 240));
+add('Line them up, smallest first', ...order(150, [50, 137], [137, 310]));
+add('The turtle looks at the card', ...chips(1, 0));
+add('one sheep hops off', ...chips(2, 1));
+add('Hens and sheep hide', async h => { const d = await h.ev(() => { const st = document.getElementById('stage'); return { legs: st.querySelector('[data-legs]').querySelectorAll('rect').length, eyes: st.querySelector('[data-heads]').querySelectorAll('ellipse').length / 2 }; });
+    const sols = []; for (let sh = 0; sh <= d.eyes; sh++) if (2 * (d.eyes - sh) + 4 * sh === d.legs) sols.push(sh);
+    h.note(d.eyes + ' pairs of eyes and ' + d.legs + ' legs drawn; sheep counts that fit: ' + sols); h.ok(d.eyes === 3 && d.legs === 10 && sols.length === 1 && sols[0] === 2, 'drawing does not match the question'); await h.chip(3); }, h => h.chip(1));
 
 (async () => {
   const t = await L.open(ROOT, 667, { init: () => { window.__bad = 0; window.addEventListener('load', () => { const o = BS.SFX.bad; BS.SFX.bad = function () { window.__bad++; return o.apply(this, arguments); }; }); } });

@@ -8,7 +8,7 @@ several bugs that were expensive to find and are easy to reintroduce.
 ## 1. What this is
 
 A puzzle and brain-game app for a 6–8 year old, running entirely in the browser.
-Currently **90 trick puzzles and 19 endless games** (v10, November 2026), roughly 420KB, no frameworks, no build
+Currently **130 trick puzzles and 27 endless games** (v13, November 2026), under 1MB, no frameworks, no build
 step, no dependencies, no network calls after first load.
 
 It was built for one specific child on one specific old phone. It has since grown
@@ -59,9 +59,9 @@ Three layers. Content never touches the DOM directly; it goes through `art.js`.
 index.html      app shell, all CSS, the visual identity, script tags
 art.js          drawing: characters, scenery, effects, the shared animation ticker
 game.js         engine: touch, drag, sound, screens, the ladder, the play log
-kit.js          helpers shared by content files, and the nine places
-puzzles*.js     the 90 Tricks puzzles. ORDER COMES FROM EACH PUZZLE'S d, NOT THE FILE
-(19 game files) one file per game; each registers itself with its own card and icon
+kit.js          helpers shared by content files, and KIT.ZOO (every animal)
+puzzles*.js     the 130 Tricks puzzles (8 files). ORDER COMES FROM EACH PUZZLE'S d, NOT THE FILE
+(27 game files) one file per game; each registers itself with its own card and icon
 sw.js           offline cache
 tests/          the test suite. Not part of the app
 ```
@@ -86,6 +86,10 @@ hard-coded. Nothing is locked. The list is sorted by `d`.
 
 ```js
 BS.registerMode('key', {
+  name: 'Name', blurb: 'One line', shelf: 'quick',      // quick | memory | think
+  color: '#9FE0A8', shade: '#6BAF75',
+  keys: ['bs.keyBest'], best: ['bs.keyBest', 'right', 'right'],
+  icon: function (svg) { /* 84 × 42 */ },
   start: function (api) { /* draw into api.arena, 360 × 420 */ },
   stop:  function () { /* clear timers, stop loops */ }
 });
@@ -144,8 +148,32 @@ the square they were dealt on and the game could not be finished.
 through other blocks to the exit.
 
 **Bump `VERSION` in `sw.js` after every change.** Otherwise the phone serves the
-cached copy and your change never appears. Currently `brain-snacks-v10`. This catches
+cached copy and your change never appears. Currently `brain-snacks-v13`. This catches
 everyone at least once.
+
+**Start from the newest copy, and prove it is the newest.** v10 was built on the files
+in the Claude project docs, which were v9 while the phone was running v12. Six games
+and forty puzzles went missing and had to be merged back (v13). Before changing
+anything, compare `VERSION` in `sw.js` and the puzzle and game counts with what the
+home screen on the phone says.
+
+**Never rename or reword a v12 puzzle's `ask` without giving it an `id` first.** Its
+save key is a hash of that text.
+
+**Nothing may sit in the top or bottom of the page without the safe-area padding.**
+Every full-screen layer (`.screen`, `.over`, `.sheet`, `#hint`) adds `var(--sat)` at
+the top and `var(--sab)` at the bottom. A new overlay that forgets this will be under
+the clock on a notched phone and look fine on the iPhone 6.
+
+**Two things that stop or get tapped must not stop on top of each other.** Follow
+took a heart for a correct tap because two critters shared a spot.
+
+**Check the content, not only the code.** v12 said three cuts make six pieces. Every
+test passed, because the test tapped the button the game called right. An answer that
+is a fact needs the fact checked.
+
+**Options in `animal()` are not free-form.** `look` is a number; a string became a
+`NaN` on screen.
 
 ---
 
@@ -225,7 +253,7 @@ starts glowing on its own.
 nine places of ten. Place new content by choosing a `d` between two neighbours. The
 play log's "Harder than their place" line shows which numbers are wrong for her.
 
-**Procedural beats fixed.** All nineteen games generate their content, so
+**Procedural beats fixed.** All twenty-seven games generate their content, so
 they never run out. On a device that spends most of its life offline this matters far
 more than a level count.
 

@@ -145,6 +145,18 @@
   }
 
   BS.registerMode('pile', {
+    name: 'Which Pile', shelf: 'quick', color: '#F5C86B', shade: '#C09642',
+    keys: ['bs.pileBest'], best: ['bs.pileBest', 'right', 'right'], blurb: 'More, not bigger',
+    icon: function (a) {
+      var i;
+    for (i = 0; i < 3; i++) {
+      ART.ink(ART.S('circle', { cx: 14 + (i % 2) * 16, cy: 12 + i * 11, r: 9, fill: '#6EC6E8' }, a), 2.2);
+    }
+    for (i = 0; i < 5; i++) {
+      ART.ink(ART.S('circle', { cx: 54 + (i % 3) * 11, cy: 11 + Math.floor(i / 3) * 13, r: 5.5,
+        fill: '#FFC93C' }, a), 2 );
+    }
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Which Pile');

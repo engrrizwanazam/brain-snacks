@@ -1,9 +1,10 @@
 const L = require('./lib.js'); const fs = require('fs');
+require('fs').mkdirSync('shots', { recursive: true });
 (async () => {
   const out = {}; fs.mkdirSync('shots', { recursive: true });
   for (const H of [667, 553]) {
     const { chromium } = require('playwright');
-    const t = await L.open(require('path').resolve(__dirname, '..'), H); const p = t.p; let bad = [];
+    const t = await L.open(process.argv[2] || require('path').resolve(__dirname, '..'), H); const p = t.p; let bad = [];
     const n = await p.evaluate(() => PUZZLES.length);
     for (let i = 0; i < n; i++) {
       await p.reload(); await p.waitForTimeout(80); await p.tap('#hero'); await p.waitForTimeout(60);

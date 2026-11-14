@@ -19,11 +19,23 @@
    no inset:, no clamp(). Grid gap always has grid-gap beside it.
    ========================================================== */
 :root {
+  /* Room for the status bar, the notch / Dynamic Island and the home bar.
+     viewport-fit=cover draws the page underneath all three, so on any phone
+     newer than the iPhone 8 the back arrow and the score sat behind the
+     clock. These are 0 on a phone with no cut-outs. constant() is iOS 11.0,
+     env() is 11.2 onwards; Safari 12 has both. */
+  --sat:0px; --sab:0px; --appw:520px;
   --night:#2B1B3F; --night-2:#3B2757; --night-3:#513673;
   --cream:#FFF6E6; --ink:#241534;
   --tangerine:#FF8A3D; --berry:#F0466F; --leaf:#3FBF7F;
   --sun:#FFC93C; --sky:#6EC6E8;
   --bounce:cubic-bezier(.34,1.56,.64,1);
+}
+@supports (padding-top:constant(safe-area-inset-top)) {
+  :root { --sat:constant(safe-area-inset-top); --sab:constant(safe-area-inset-bottom); }
+}
+@supports (padding-top:env(safe-area-inset-top)) {
+  :root { --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom); }
 }
 * { box-sizing:border-box; }
 html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:var(--night); }
@@ -46,7 +58,9 @@ button { font-family:inherit; }
   text-shadow:-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),2px 2px 0 var(--ink),
     0 -3px 0 var(--ink),0 3px 0 var(--ink),-3px 0 0 var(--ink),3px 0 0 var(--ink),0 5px 0 rgba(36,21,52,.45);
 }
-.screen { display:none; position:absolute; top:0; right:0; bottom:0; left:0; padding:14px 16px; }
+.screen { display:none; position:absolute; top:0; right:0; bottom:0; left:0;
+  padding:14px 16px; padding-top:calc(14px + var(--sat)); padding-bottom:calc(14px + var(--sab));
+  max-width:var(--appw); margin:0 auto; }
 .screen.on { display:block; }
 .col { display:-webkit-box; display:-webkit-flex; display:flex;
   -webkit-box-orient:vertical; -webkit-flex-direction:column; flex-direction:column; height:100%; }
@@ -180,7 +194,7 @@ button { font-family:inherit; }
 @keyframes toastup{0%{opacity:0;transform:scale(.6) rotate(-8deg)}22%{opacity:1;transform:scale(1.08) rotate(-4deg)}72%{opacity:1;transform:scale(1) rotate(-4deg)}100%{opacity:0;transform:scale(1) rotate(-4deg) translateY(-22px)}}
 
 .over { position:absolute; top:0; right:0; bottom:0; left:0; background:rgba(43,27,63,.94);
-  z-index:60; display:none; padding:18px; text-align:center; }
+  z-index:60; display:none; padding:18px; padding-top:calc(18px + var(--sat)); padding-bottom:calc(18px + var(--sab)); text-align:center; }
 .over.on { display:-webkit-box; display:-webkit-flex; display:flex;
   -webkit-box-orient:vertical; -webkit-flex-direction:column; flex-direction:column;
   -webkit-box-pack:center; -webkit-justify-content:center; justify-content:center; }
@@ -199,7 +213,7 @@ button { font-family:inherit; }
 @-webkit-keyframes fall{to{-webkit-transform:translateY(105vh) rotate(540deg);opacity:0}}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:0}}
 
-#hint { position:absolute; left:16px; right:16px; bottom:16px; background:var(--cream); color:var(--ink);
+#hint { position:absolute; left:16px; right:16px; bottom:16px; bottom:calc(16px + var(--sab)); background:var(--cream); color:var(--ink);
   border-radius:19px; padding:17px; box-shadow:0 7px 0 rgba(36,21,52,.5); z-index:50; display:none; }
 #hint.on { display:block; -webkit-animation:rise .28s var(--bounce) both; animation:rise .28s var(--bounce) both; }
 @-webkit-keyframes rise{from{-webkit-transform:translateY(40px);opacity:0}to{-webkit-transform:none;opacity:1}}
@@ -217,7 +231,7 @@ button { font-family:inherit; }
 
 /* ---------- play log (grown-ups only) ---------- */
 .sheet { position:absolute; top:0; right:0; bottom:0; left:0; background:#1B1029;
-  z-index:80; display:none; padding:16px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  z-index:80; display:none; padding:16px; padding-top:calc(16px + var(--sat)); padding-bottom:calc(16px + var(--sab)); overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .sheet.on { display:block; }
 .sheet h2 { margin:0 0 4px; font-size:17px; font-weight:800; color:var(--cream); }
 .st-sum { margin:2px 0 10px; font-size:12.5px; font-weight:600; line-height:1.4;
@@ -246,6 +260,8 @@ table.st tr.ok td:first-child { color:var(--leaf); }
   .over-word{font-size:42px}
   .over-why{margin:9px auto 14px;font-size:14.5px}
   .big{padding:15px}
+  .picker{margin-top:7px}
+  .picker button{padding:10px 6px;font-size:13px}
 }
 @media (prefers-reduced-motion:reduce){ *{-webkit-animation-duration:.01ms!important;animation-duration:.01ms!important} }
 </style>
@@ -361,6 +377,9 @@ table.st tr.ok td:first-child { color:var(--leaf); }
 <script src="puzzles3.js"></script>
 <script src="puzzles4.js"></script>
 <script src="puzzles5.js"></script>
+<script src="puzzles6.js"></script>
+<script src="puzzles7.js"></script>
+<script src="puzzles8.js"></script>
 <!-- games: each one brings its own home card -->
 <script src="oddone.js"></script>
 <script src="spot.js"></script>
@@ -381,6 +400,14 @@ table.st tr.ok td:first-child { color:var(--leaf); }
 <script src="beads.js"></script>
 <script src="robot.js"></script>
 <script src="mirror.js"></script>
+<script src="cups.js"></script>
+<script src="follow.js"></script>
+<script src="howmany.js"></script>
+<script src="whichpile.js"></script>
+<script src="colour.js"></script>
+<script src="opposite.js"></script>
+<script src="shadows.js"></script>
+<script src="roundup.js"></script>
 <script>BS.boot();</script>
 </body>
 </html>

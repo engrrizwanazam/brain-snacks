@@ -1,12 +1,15 @@
 /* Brain Snacks — offline cache.
    BUMP VERSION after every edit, or the phone keeps serving the old copy. */
-var VERSION = 'brain-snacks-3e76176';
+var VERSION = 'brain-snacks-v13';
 var FILES = ['./', './index.html', './art.js', './game.js', './kit.js',
              './puzzles.js', './puzzles2.js', './puzzles3.js', './puzzles4.js', './puzzles5.js',
+             './puzzles6.js', './puzzles7.js', './puzzles8.js',
              './pairs.js', './oddone.js', './echo.js', './spot.js', './slide.js',
              './snapshot.js', './trail.js', './wakeup.js', './sortit.js', './maze.js',
              './untangle.js', './whichway.js', './fillit.js',
              './bigone.js', './chomp.js', './wholeft.js', './beads.js', './robot.js', './mirror.js',
+             './cups.js', './follow.js', './howmany.js', './whichpile.js', './colour.js', './opposite.js',
+             './shadows.js', './roundup.js',
              './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 /* cache.addAll() is atomic: one 404 anywhere and the whole install rejects, the

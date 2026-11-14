@@ -95,6 +95,13 @@
   }
 
   BS.registerMode('colour', {
+    name: 'Say the Colour', shelf: 'quick', color: '#D9A0F0', shade: '#A472BC',
+    keys: ['bs.colourBest'], best: ['bs.colourBest', 'right', 'right'], blurb: 'Ignore the word',
+    icon: function (a) {
+      var i;
+    ART.ink(ART.S('rect', { x: 8, y: 8, width: 68, height: 26, rx: 6, fill: '#FFF6E6' }, a), 2.4);
+    ART.txt('RED', { x: 42, y: 29, 'font-size': 19, fill: '#6EC6E8' }, a);
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Say the Colour');

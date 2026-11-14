@@ -63,6 +63,10 @@ var BS = (function () {
     { n: 'Night Woods',  c: '#9A8FE0', s: '#6A60AC', host: 'owl',      f: '#C58B4F' },
     { n: 'Robot Lab',    c: '#A9C4E0', s: '#7890AC', host: 'mouse',    f: '#C9BFD6' },
     { n: 'Snowy Peak',   c: '#CFEBFA', s: '#93B8CC', host: 'penguin',  f: '#4A5578' },
+    { n: 'Frog Marsh',   c: '#A8E08A', s: '#74AB58', host: 'frog',     f: '#5FC47F' },
+    { n: 'Farm Yard',    c: '#F5D58A', s: '#BFA052', host: 'hen',      f: '#FFF0C0' },
+    { n: 'Pig Parade',   c: '#FFB8C8', s: '#C98494', host: 'pig',      f: '#FFB0C0' },
+    { n: 'Jumbo Jungle', c: '#8FD9B0', s: '#5FA680', host: 'elephant', f: '#A9A6C4' },
     { n: 'Star Station', c: '#FFD84A', s: '#C9A61E', host: 'lion',     f: '#E8A63A' }
   ];
   function perChapter() { return Math.max(1, Math.ceil(PUZZLES.length / CHAPTERS.length)); }
@@ -111,13 +115,21 @@ var BS = (function () {
 
   /* The 60 puzzles of v8/v9, in the order they had then. Old saves that were
      keyed by position are translated through this list exactly once. */
-  var LEGACY = ['yawkti', 'l4u72d', '1jgb4zk', '11lk79u', '1kz7der', '1es9tx9', 'l2l2v3', '32v85j', 'zdq2gb',
-    '1vgwhy6', '1w0buj8', '1ysgbhv', 'dfhx1v', 'opzbk4', '1ke47in', '1gl1kj0', 'qs1tz6', 'p2f99a', '1y7wm3k',
-    '6mm2y8', '1brje61', '1e2b096', '1ttqk68', '1kyqyed', 'ui0im5', 'msqh1d', '14zvwij', 'ec5pfz', '1j8snow',
-    'z84cn9', '1w6swwe', '1mq92nn', '1819mp0', '1fghxgd', 'zcawuo', '27t3oz', 'nssa65', '14vtp0b', 'a4jbqo',
-    'gttjfw', '1pvals2', '1j7rsr', '1cppcnm', '10dzmis', '10nuo4y', '1p6j2up', 'e5diqo', '15b3x2l', '1f03k50',
-    '17ppwl3', '1udn1ix', '1l0w70z', '15nioxl', '1ncq38l', '5u8snc', '18q45fj', 'p7xga1', '1igf2wm', 'n1ftir',
-    'a3vlns'];
+  var LEGACY = [
+    'yawkti', 'l4u72d', '1jgb4zk', '11lk79u', '1kz7der', '1es9tx9', 'l2l2v3', '32v85j',
+    'zdq2gb', '1vgwhy6', '1w0buj8', '1ysgbhv', 'dfhx1v', 'opzbk4', '1ke47in', '1gl1kj0',
+    'qs1tz6', 'p2f99a', '1y7wm3k', '6mm2y8', '1brje61', '1e2b096', '1ttqk68', '1kyqyed',
+    'ui0im5', 'msqh1d', '14zvwij', 'ec5pfz', '1j8snow', 'z84cn9', '1w6swwe', '1mq92nn',
+    '1819mp0', '1fghxgd', 'zcawuo', 'm6ntec', 'jr3yoi', 'pydqme', '10bg76z', '612p4j',
+    '14vtp0b', '1pvals2', '1j7rsr', '1cppcnm', '10dzmis', '10nuo4y', '1p6j2up', 'e5diqo',
+    '15b3x2l', '1f03k50', '17ppwl3', '1udn1ix', '1l0w70z', '15nioxl', '1ncq38l', '5u8snc',
+    '18q45fj', 'p7xga1', '1igf2wm', 'n1ftir', 'a3vlns', 'fwvtlq', '1m57oft', 'ryvf1v',
+    'hd78nk', '135lt21', 'o992i', '1ljldpf', '1188p8x', '1aw25jf', '3d107n', 'd1vkhl',
+    '19zwoch', '1xw149z', '18lc6i8', '1mc8x9f', '1pu1n3t', 'nlzxh5', '1kqzi0w', '1uw2g3r',
+    '1h61n4f', '121vdad', 'uzuzfb', '1a76wlm', '15vdcxo', '1nq22jm', 'hwo8ix', 'jiwjk1',
+    'rmo2ro', '6lgyml', 'nng7g9', '4wyohd', '8p0ssq', 'kwsx45', 'r9ie76', 'jpz2rc',
+    'i2bnga', '1coqytn', '1nf6j2p', '6rzvro'
+  ];
 
   /* ---------- play log ----------
      Local only. Never sent anywhere, never shown to her. It exists to answer
@@ -197,14 +209,22 @@ var BS = (function () {
   }
 
   /* ---------- interactions ---------- */
+  /* iOS fires a synthetic mouseup after touchend for the same physical tap, up
+     to about 300ms later, so both listeners would run the handler twice. A flat
+     280ms lockout on the element killed the second tap of a genuine double
+     press (the same arrow twice in a row). Suppress the *ghost mouse event*
+     specifically, and keep only a very short guard against a true double-fire. */
   function tap(el, fn) {
     el.style.cursor = 'pointer';
-    var fired = false;
+    var lastTouch = 0, lastFire = 0;
     function go(e) {
       if (locked) { return; }
+      var now = Date.now();
+      if (e.type === 'touchend') { lastTouch = now; }
+      else if (now - lastTouch < 700) { return; }   /* the ghost mouse event */
       e.preventDefault(); e.stopPropagation();
-      if (fired) { return; }
-      fired = true; setTimeout(function () { fired = false; }, 280);
+      if (now - lastFire < 60) { return; }
+      lastFire = now;
       fn(el);
     }
     el.addEventListener('touchend', go, false);
@@ -742,28 +762,9 @@ var BS = (function () {
   function migrate() {
     var mk, oi;
     doneMap = load('bs.doneIds', null);
-    if (!doneMap || typeof doneMap !== 'object') {
-      /* v6 stored a high-water count in bs.solved; v7 an index map in bs.done.
-         Both refer to the 56-puzzle order that existed before the v8 ramp. */
-      doneMap = {};
-      var old = load('bs.done', null);
-      if (!old || typeof old !== 'object') {
-        old = {};
-        var hw = load('bs.solved', 0);
-        if (typeof hw !== 'number' || hw < 0) { hw = 0; }
-        if (hw > 56) { hw = 56; }
-        for (var mi = 0; mi < hw; mi++) { old[mi] = 1; }
-      }
-      for (mk in old) {
-        if (!old.hasOwnProperty(mk) || old[mk] !== 1) { continue; }
-        oi = parseInt(mk, 10);
-        if (isNaN(oi) || oi < 0 || oi > 55) { continue; }
-        /* v8: 2 puzzles inserted before old #36, 2 more before old #37 */
-        var ni = oi >= 36 ? oi + 4 : (oi >= 35 ? oi + 2 : oi);
-        if (LEGACY[ni]) { doneMap[LEGACY[ni]] = 1; }
-      }
-      save('bs.doneIds', doneMap);
-    }
+    /* The v6 and v7 save formats (bs.solved, bs.done) are no longer read:
+       a phone that has run v12 has already had them turned into bs.doneIds. */
+    if (!doneMap || typeof doneMap !== 'object') { doneMap = {}; }
 
     stats = load('bs.log', null);
     if (!stats || typeof stats !== 'object') {
@@ -794,7 +795,26 @@ var BS = (function () {
     muted = load('bs.muted', false);
     migrate();
 
-    function fit() { document.body.style.height = window.innerHeight + 'px'; }
+    /* Added to the home screen, the page IS the screen, and innerHeight has
+       been seen to come up short there (a dead band above the home bar on a
+       notched phone). In a browser tab innerHeight is still the only number
+       that follows the toolbars.
+       --appw keeps the play area narrow enough that a 360 x 420 arena plus its
+       header fits the height, so a tablet or a desktop window shows a phone-
+       sized game in the middle instead of one too tall for the screen. */
+    function fit() {
+      var st = window.navigator.standalone === true;
+      document.body.style.height = st ? '100%' : (window.innerHeight + 'px');
+      var h = st ? document.documentElement.clientHeight : window.innerHeight;
+      /* a notch and a home bar take height away too: read what the CSS added */
+      try {
+        var cs = window.getComputedStyle(document.querySelector('.screen'));
+        var ins = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) - 28;
+        if (ins > 0 && ins < 200) { h -= ins; }
+      } catch (e2) {}
+      var w = Math.max(280, Math.min(520, Math.floor((h - 100) / 1.1667)));
+      try { document.documentElement.style.setProperty('--appw', w + 'px'); } catch (e) {}
+    }
     fit();
     window.addEventListener('resize', fit, false);
     window.addEventListener('orientationchange', function () { setTimeout(fit, 320); }, false);

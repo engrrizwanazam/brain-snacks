@@ -18,7 +18,11 @@
     { k: 'cat', r: 7, f: '#FFB03A', leg: 2.15 }, { k: 'fox', r: 8, f: '#E8722F', leg: 2.2 },
     { k: 'dog', r: 10, f: '#C98B52', leg: 2.2 }, { k: 'pig', r: 12, f: '#FF9FB2', leg: 2.2 },
     { k: 'lion', r: 15, f: '#E8A63A', leg: 2.2 }, { k: 'bear', r: 16, f: '#B07A4C', leg: 2.2 },
-    { k: 'elephant', r: 20, f: '#A9A6C4', leg: 2.3 }
+    { k: 'elephant', r: 20, f: '#A9A6C4', leg: 2.3 },
+    { k: 'turtle', r: 3, f: '#7FCF7A', leg: 2.0 }, { k: 'hen', r: 4, f: '#FFF0C0', leg: 2.0 },
+    { k: 'monkey', r: 8, f: '#A8713F', leg: 2.12 }, { k: 'sheep', r: 11, f: '#FFF6E6', leg: 2.16 },
+    { k: 'tiger', r: 15, f: '#F59A3A', leg: 2.16 }, { k: 'panda', r: 16, f: '#FFFFFF', leg: 2.2 },
+    { k: 'cow', r: 17, f: '#FFF6E6', leg: 2.24 }
   ];
   var MINGAP = 3;
 

@@ -1,7 +1,7 @@
 {
   "name": "Brain Snacks",
   "short_name": "Brain Snacks",
-  "description": "Twenty games. Most of them have a catch.",
+  "description": "Twenty-eight games. Most of them have a catch.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

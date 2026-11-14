@@ -1,37 +1,78 @@
 # Brain Snacks
 
-Twenty games for a 6–8 year old, built to run on an iPhone 6 (iOS 12.5 / Safari 12).
-Nothing in it says "maths".
+Twenty-eight games for a 6–8 year old, built to run on an iPhone 6 (iOS 12.5 /
+Safari 12) and on anything newer. Nothing in it says "maths".
 
-**v10, 13 November 2026:** 90 trick puzzles (was 60) in nine named places, 19 endless
-games (was 13), a re-ordered difficulty ladder, a new look, and five long-standing bugs
-found by the test suite, two of which made a game or puzzle unplayable. The suite now
-ships in `tests/`.
+**v13, 14 November 2026.** v10 was built from the copy of the project that was then in
+the Claude project docs, which was v9. The real latest was v12. v13 is the two put back
+together: everything v12 had, with the v10 look, ladder and fixes, plus:
+
+- **130 trick puzzles in thirteen places.** All 100 of v12's, 25 of v10's thirty (the
+  other five were the same idea as a v12 puzzle and were dropped), and five new ones.
+  Every v12 puzzle keeps its save key, so nothing she has solved comes back unsolved.
+- **27 endless games.** v12's six that v10 was missing (Cups, Follow, How Many, Which
+  Pile, Say the Colour, Opposite Day), v10's six, and two new: Shadows and Round Up.
+- **Notches and home bars.** The header no longer sits under the status bar on newer
+  phones. See "Any screen" below.
+- **Animals redrawn.** Cat, dog, bear and fish are new drawings, and tiger, panda,
+  monkey, cow, sheep and turtle are new animals. A cow is now a cow from its horns.
+- **One wrong answer corrected** (three cuts of a pancake make 7 pieces, not 6) and
+  five smaller faults. See "Bugs caught in v13".
 
 | shelf | game | what it is | what it works on |
 |---|---|---|---|
-| | **Tricks** | 90 puzzles, each with a catch. The main event | lateral thinking |
+| | **Tricks** | 130 puzzles, each with a catch. The main event | lateral thinking |
 | Quick! | **Odd One** | find the different critter before the timer ends | visual discrimination |
 | | **Spot It** | two pictures, a few quiet differences, on the clock | comparison, sustained attention |
 | | **Wake Up** | tap the awake ones, leave the sleepers alone | impulse control (go / no-go) |
 | | **Which Way** | tap the way the *middle* arrow points | attention under interference |
 | | **Trail** | tap in order: 1, 2, 3… then 1, A, 2, B… | attention switching |
 | | **Sort It** | sort by colour… then the rule changes to shape | cognitive flexibility |
-| | **Big One** *new* | who is bigger in real life? The drawing lies | inhibition (size Stroop) |
-| | **Chomp** *new* | feed the monster two snacks that make his number | number bonds, fluency |
+| | **Big One** | who is bigger in real life? The drawing lies | inhibition (size Stroop) |
+| | **Chomp** | feed the monster two snacks that make his number | number bonds, fluency |
+| | **How Many** | berries flash and vanish. How many were there? | subitising |
+| | **Which Pile** | which pile has more? The big stones are not more | number against size |
+| | **Say the Colour** | the word says RED, the ink is blue. Tap the ink | inhibition (Stroop) |
+| | **Opposite Day** | tap the burrow the rabbit did *not* come out of | inhibition, rule holding |
+| | **Shadows** *new* | one animal in the dark. Whose outline is it? | shape from outline |
+| | **Round Up** *new* | a field of animals. Count only one kind | selective attention, counting |
 | Remember! | **Pairs** | memory matching, three board sizes | recognition memory |
 | | **Echo** | watch colours light up, then repeat the sequence | sequential recall |
 | | **Snapshot** | critters flash, then vanish. Tap where they were | visuospatial working memory |
-| | **Who Left?** *new* | a crowd, a curtain, and one of them is gone | working memory (object identity) |
+| | **Who Left?** | a crowd, a curtain, and one of them is gone | working memory (object identity) |
+| | **Cups** | the ball goes under a cup, the cups swap | tracking one object |
+| | **Follow** | some light up, then they all wander. Which were they? | tracking several objects |
 | Figure it out | **Slide** | sliding tile puzzle, three sizes, always solvable | spatial planning |
 | | **Maze** | drag the mouse to the cheese | route planning |
 | | **Untangle** | drag the dots until no strings cross | spatial reasoning, persistence |
 | | **Fill It** | pack the pieces to cover every square | spatial planning |
-| | **Beads** *new* | one bead is missing from the string | pattern induction, two rules at once |
-| | **Robot** *new* | plan the whole route, then press GO | planning, sequencing |
-| | **Mirror** *new* | paint the other half to match | symmetry |
+| | **Beads** | one bead is missing from the string | pattern induction, two rules at once |
+| | **Robot** | plan the whole route, then press GO | planning, sequencing |
+| | **Mirror** | paint the other half to match | symmetry |
 
-All nineteen games generate their own rounds, so they never run out.
+All twenty-seven games generate their own rounds, so they never run out.
+
+## Any screen
+
+v12 and v10 put the back button and the score 14 px from the top of the page. Installed
+to a home screen the page is drawn underneath the status bar, so on a phone with a notch
+or a Dynamic Island they were behind the clock.
+
+- The page already asked for the whole screen (`viewport-fit=cover`). It now also reads
+  how much of it the phone keeps for itself (`safe-area-inset-top` and `-bottom`) and
+  pads every screen, the win card, the hint and the play log by that much. On an iPhone
+  6 both numbers are 0 in Safari and 20 px when installed, so nothing changes there
+  except that the header clears the clock.
+- Both spellings are present: `constant()` for iOS 11.0–11.2 and `env()` for everything
+  after. A browser that knows neither keeps 0.
+- On a tablet or a phone on its side the app is a centred column no wider than the
+  height can show in full (`--appw`, set in `fit()` in `game.js`). Before, a wide screen
+  made the picture wider than the screen was tall.
+
+Chrome has no notch, so this was tested by forcing the two inset numbers to the values
+real phones report, on eight screen sizes. **It has not been seen on a real notched
+phone.** If the header is still too high on yours, the one number to raise is the
+`14px` in `.screen { padding-top: calc(14px + var(--sat)) }` in `index.html`.
 
 ## The Tricks ladder
 
@@ -40,11 +81,27 @@ thing that decides the order.** Which file a puzzle lives in no longer matters, 
 puzzle goes at the difficulty it deserves by choosing a number between its neighbours
 (`d: 43.5` lands between 43 and 44). Nothing is locked.
 
-Ten puzzles make a place: Sunny Meadow, Duck Pond, Monster Kitchen, Carrot Patch, Toy
-Workshop, Night Woods, Robot Lab, Snowy Peak, Moon Base. The places are names and
+Ten puzzles make a place: Sunny Meadow, Duck Pond, Toy Room, Candy Lane, Sunset Hill,
+Night Woods, Robot Lab, Snowy Peak, Frog Marsh, Farm Yard, Pig Parade, Jumbo Jungle,
+Star Station (`CHAPTERS` in `game.js`). The places are names and
 pictures only. They are not called levels, and nothing says what a place "teaches".
 
+### Where the v12 puzzles went
+
+v12's forty extra puzzles had no `d`, because v12 still ordered by file. Each was read
+against its new neighbours and given one. The easiest of them (which flag is drawn
+wrong, which candle was lit first) sit in the fifth place; the hardest
+(the die's opposite face, the feeders, the wrong labels, three cuts) are in the last.
+`tests/ladder.js` prints the whole list with its numbers. **This is a judgement, as
+before.** The play log is what corrects it.
+
+The five new ones: who is in the bush (#14), line them up by real size (#28), one sheep
+hops off the plank (#34), what the turtle sees from the other side (#38), and hens and
+sheep behind a fence, the last puzzle of all.
+
 ### Was the old order gradual? No, in four places
+
+*(Written for v10. The position numbers in this section are from the 90-puzzle list.)*
 
 Checked by reading all 60 against each other, then by where the hard ones sat:
 
@@ -129,11 +186,13 @@ The `tests/` folder is not part of the app and is not cached. Upload it or leave
 | `index.html` | app shell, all the CSS, the visual identity |
 | `art.js` | **characters, scenery, effects.** Change how everything looks here |
 | `game.js` | engine: touch, drag, sound, screens, the ladder, the play log |
-| `kit.js` | **shared helpers for content files** (`KIT.options`, `KIT.orderGame`, `KIT.pad`, `KIT.cob`…) and the nine places (`KIT.CHAPTERS`) |
-| `puzzles.js` `puzzles2.js` `puzzles3.js` | the original 60 puzzles |
-| `puzzles4.js` `puzzles5.js` | the 30 new ones |
-| `oddone.js` `spot.js` `wakeup.js` `whichway.js` `trail.js` `sortit.js` `bigone.js` `chomp.js` | Quick! |
-| `pairs.js` `echo.js` `snapshot.js` `wholeft.js` | Remember! |
+| `kit.js` | **shared helpers for content files** (`KIT.options`, `KIT.orderGame`, `KIT.pad`, `KIT.banner`, `KIT.hearts`…) and `KIT.ZOO`, every animal with its usual colour |
+| `puzzles.js` `puzzles2.js` `puzzles3.js` | the first 60 or so, as v12 had them |
+| `puzzles4.js` `puzzles5.js` | v12's two later packs (39 puzzles) |
+| `puzzles6.js` `puzzles7.js` | the 25 kept from v10 (these were `puzzles4/5.js` in v10) |
+| `puzzles8.js` | the five new in v13 |
+| `oddone.js` `spot.js` `wakeup.js` `whichway.js` `trail.js` `sortit.js` `bigone.js` `chomp.js` `howmany.js` `whichpile.js` `colour.js` `opposite.js` `shadows.js` `roundup.js` | Quick! |
+| `pairs.js` `echo.js` `snapshot.js` `wholeft.js` `cups.js` `follow.js` | Remember! |
 | `slide.js` `maze.js` `untangle.js` `fillit.js` `beads.js` `robot.js` `mirror.js` | Figure it out |
 | `sw.js` | offline cache |
 | `tests/` | the test suite (see below) |
@@ -161,7 +220,7 @@ Put it in any puzzle file, inside the `BS.addPuzzles([...])` call.
 ```
 
 The stage is 360 × 300 units. Progress is keyed by `id`, or by a hash of the `ask` text
-when there is no `id`. The original 60 have no `id`, so **editing one of their `ask`
+when there is no `id`. The 100 that came from v12 have no `id`, so **editing one of their `ask`
 strings resets that puzzle to unsolved** unless you first give it an `id` equal to its
 old hash (the play-log table and `tests/ladder.js` print it).
 
@@ -182,23 +241,36 @@ card, its icon, its best-score line and "Start over" all come from the registrat
 
 ```js
 BS.registerMode('big', {
-  name: 'Big One', sub: 'Bigger in real life', shelf: 'quick',   // quick | memory | think
-  colour: '#9FE0A8', shade: '#6BAF75',
-  best: 'bs.bigBest', unit: ['right', 'right'],                  // "Best 12 right"
+  name: 'Big One', blurb: 'Bigger in real life', shelf: 'quick',   // quick | memory | think
+  color: '#9FE0A8', shade: '#6BAF75',
+  keys: ['bs.bigBest'],                    // everything "Start over" must remove
+  best: ['bs.bigBest', 'right', 'right'],  // key, singular, plural: "Best 12 right"
   icon: function (svg) { /* draw into an 84 x 42 viewBox */ },
   start: function (api) { /* draw into api.arena, 360 x 420 */ },
   stop:  function () { }
 });
 ```
 
+(The example printed here in v10 used `sub`, `colour` and `unit`. Those were wrong; this
+is what the code reads.)
+
 `api` gives `arena, title, score, bar, showBar, foot, toast, over, confetti, load,
 save, SFX`, and `api.later(fn, ms)`, which is cancelled when the game is left.
 
 ## Drawing things
 
-`animal()` gives real silhouettes: cat, mouse, elephant, dog, fox, bear, bunny, duck,
-owl, fish, and new in v10 **hen, frog, penguin, lion, pig**. Origin is the centre of
-the head. `A.robot()` draws the robot. `critter()` is the simpler blob.
+`animal()` draws 21 animals: mouse, elephant, fox, bunny, duck, owl, frog, hen, pig,
+lion, penguin, and redrawn or new in v13 **cat, dog, bear, fish, tiger, panda, monkey,
+cow, sheep, turtle**. Origin is the centre of the head. `KIT.ZOO` lists them with their
+usual colours. `A.silhouette(g)` turns one into its shadow. `A.robot()` draws the robot.
+`critter()` is the simpler round face; Odd One, Snapshot and Follow use it on purpose,
+because there the faces are meant to be alike.
+
+What changed in the redraw: every animal now has the two or three things a child names
+it by. The dog has drooping ears, an eye patch and a collar; the cat sits, with stripes
+and a curled tail; the bear has round ears and arms; the cow has horns, patches and a
+pink muzzle; the sheep is a dark face in a cloud of wool. Before, cat, dog and bear
+were one head shape with different ears.
 
 `scene(st, kind, opts)` paints a background: `day | meadow | dusk | night | water |
 sea | room | candy`, and new `forest | lab | snow | space`. Suns turn slowly, clouds
@@ -224,7 +296,7 @@ file stops that whole file parsing, silently.
 - **`BS.later` / `api.later`, never `setTimeout`** (new)
 - Gradients are cached per colour per SVG
 
-## Performance (v10)
+## Performance (v10 figures; the v13 leak check is under "Tested")
 
 Measured in headless Chrome at 375 × 667. **Not measured on the iPhone 6 itself.**
 
@@ -251,51 +323,89 @@ the `tests` folder; each takes the app folder as its argument (default `..`).
 | script | what it measures |
 |---|---|
 | `node es5.js ..` | every `.js` file parses as ES5 |
-| `node pz.js ..` | all 90 puzzles: a wrong move first, then the win, by real touch events |
-| `node gm.js ..` | all 19 games played by reading the screen |
-| `node misc.js ..` | ladder integrity, both screen heights, timers, old saves, Start over, offline list, CSS |
-| `node sheets.js` | every puzzle at 375 × 667 and 375 × 553, plus screenshots |
-| `node perf.js` | the table above |
+| `node pz.js ..` | 105 puzzles: a wrong move first, then the win, by real touch events |
+| `node explore.js ..` | the other 25, which are one-tap answers: taps *every* target on a fresh copy and records which win and which are refused |
+| `node gm.js .. [game]` | all 27 games played by reading the screen. Run one game at a time |
+| `node misc.js ..` | ladder integrity, both screen heights, timers, old saves, Start over, offline list, CSS, notches and wide screens |
+| `node sheets.js ..` | every puzzle at 375 × 667 and 375 × 553, plus screenshots |
+| `node leak2.js ..` | animation jobs alive while each game runs by itself for 12 s |
 
-What "passed" means, for the v10 run:
+What "passed" means, for the v13 run on 14 November 2026:
 
-**Win path, 90 of 90.** Each puzzle is opened from the list and solved with touch
-events at stage coordinates. A puzzle counts only if the win card appears *and* the
-solve is saved. Where something moves, the drawn position is read back: the cat is at
-the foot of the ladder, the three Hanoi discs are drawn on the last peg, the robot is
-drawn on the answer square, the jug labels show the target.
+**Win path, 130 of 130.** 105 by a written solution played with touch events; a puzzle
+counts only if the win card appears *and* the solve is saved. 25 by `explore.js`, where
+the winning target is found by trying them all.
 
-**Wrong path, 90 of 90.** Before each win, an obvious wrong move is made and the test
-checks that it does not win, that it is refused where it should be, and that things go
-back: the wrong lid returns, the fox is sent back, the medium disc stays put, a tap
-during the cup shuffle is ignored, a repeated ice cream fills no second slot.
+**Wrong path, 130 of 130.** For the 105, an obvious wrong move is made first and must
+not win and must be refused where it should be. For the 25, every target but one is
+refused and exactly one wins; none had a tap that did nothing.
 
-**Solvability, solved in code, then played through the interface:** Hanoi (BFS, 7),
-the real river (BFS, 7 crossings), all three jug puzzles (BFS), the sliding block (BFS
-with real sliding, 4 slides and out), the frog swap (BFS, 8), the bee (exhaustive
-search of routes), the fruit grid and the cat seating (exhaustive, exactly one answer
-each), the program robot (BFS, within the strip), the berry game (search over the
-monster's actual rule). In the games: Slide by BFS on two sizes, Maze by BFS over walls
-read from the picture with the mouse's position measured on every square, Fill It by
-exact cover on five boards, Robot by BFS on seven routes, Beads by inferring the repeat
-from the beads shown on 18 strings (no string had two rules that disagreed), Chomp's
-generator proved for every target 5–16.
+**Solvability, solved in code, then played through the interface.** Everything listed
+for v10 that is still in the app, plus v12's: the lamps, the frog's stones, the lift,
+the two trains, the pancake flips, the ice slide, the feeders (all BFS), the
+caterpillar and the colour code (exhaustive search), the bee's plan, and the postman's
+roads (counting the roads at each house, which is what decides whether such a walk
+exists). The new fence puzzle: the test counts the eyes and legs actually
+drawn and checks that exactly one number of sheep fits them.
+
+**Games, 27 of 27, each by what is on the screen.** New in this run: Cups (keep hold of
+one cup through every swap), Follow (mark the ones that lit up, read where they stop),
+How Many (count the berries drawn), Which Pile (count the stones; in 5 of 13 rounds the
+bigger-looking pile had fewer), Say the Colour (read the ink; word and ink disagreed 8
+times in 15), Opposite Day, Shadows (the shadow is one flat colour every round, bear and
+panda or cat and tiger are never offered together, a timeout costs a heart), Round Up
+(count the wanted animals drawn; no two animals closer than 56 units; the right count
+is always among the four buttons). Every game also has a wrong answer made on purpose,
+which must cost a heart or end the run.
 
 **Geometry.** Every puzzle before and after play, every game before and after play:
 no `NaN`, `undefined` or `Infinity` in any SVG attribute.
 
-**Layout at 375 × 667 and 375 × 553.** Home, puzzle list, all 90 puzzles, the hint
-sheet, the win card, all 19 game screens and the play log: nothing outside the screen,
-no question clipped, no column taller than the screen.
+**Layout at 375 × 667 and 375 × 553.** Home, puzzle list, all 130 puzzles, the win
+card, all 27 game screens and the play log: nothing outside the screen.
 
-**Also:** each game left after 0.1 s and after 0.9 s with nothing repainting the next
-screen; a puzzle left 60 ms after its winning move does not win on the next one; a v9
-save with all 60 solved shows all 60 solved; v9, v7 and v6 saves migrate to the right
-puzzles; "Start over" removes every key.
+**Notches and wide screens.** With the insets forced: 393 × 852 (59 top, 34 bottom),
+375 × 812 (50, 34), 430 × 932 (59, 34), 360 × 780 (32, 16), 375 × 667 (20, 0),
+820 × 1180 and 1180 × 820 (24, 20), 320 × 568 (24, 0). On each: home, list, three
+puzzles, the hint, the win card and five games. Nothing starts above the top inset or
+ends below the bottom one, nothing is off the side, and the picture is never under 250
+px wide.
 
-**Not verified:** anything on the real iPhone 6 (speed, touch feel, sound). Android
-Chrome. Whether the new order is right for *her*; that is what the play log is for.
-The games' later rounds were played to round 5–18, not to their hardest settings.
+**Also:** each of 27 games left after 0.1 s and after 0.9 s with nothing repainting the
+next screen; a puzzle left 60 ms after its winning move does not win on the next one;
+a v12 save with all 100 solved shows 100 of 130 solved; a v12 play log lands on the
+right puzzles; best scores survive; "Start over" removes every key; no game holds more
+than 16 animation jobs after 12 s alone, and all drop back to 3 on the home screen.
+
+**Not verified:** anything on a real phone. That means the iPhone 6 (speed, touch feel,
+sound), any phone with a notch (the insets were forced, not real), and Android. Whether
+the order is right for *her*. The games' later rounds were played to round 5–18, not to
+their hardest settings. Whether a 7-year-old can now name every animal: they were
+checked by looking at them, which is one adult's opinion.
+
+**One thing to know about saves.** A phone that ran v10 had its play log (not its
+solved puzzles) re-keyed with the v9 table. Where v9 and v12 differ in order, a few of
+those log lines sit on the wrong puzzle. Solved state is unaffected. The Clear button
+on the play log starts it clean.
+
+### Bugs caught in v13
+
+1. **Three cuts across a pancake: the game said 6, the answer is 7.** (v12 content.)
+   Six is what you get when all three cuts cross at one point. Move one cut off that
+   point and there are seven. The right answer was not even among the buttons.
+2. **"I am thinking of a number": the −1 and +1 buttons were half underneath Guess.**
+   (v12.) A tap meant for +1 could land on Guess. Moved apart.
+3. **Follow could take a heart for a correct tap.** (v12.) Two critters could stop on
+   top of each other, and the tap went to the one drawn last. They now stop apart.
+4. **The pulley mouse was hidden behind the answer cards**, the lever's answer text
+   ran out of its card, and the stone-drop labels overlapped. (v12.) Redrawn.
+5. **The sliding-block, mirror-halves, frog-swap and jug fixes from v10 would have been
+   lost** by taking v12's `puzzles3.js` whole. They were merged by hand and re-tested.
+6. **A new puzzle shipped a `NaN` for about ten minutes**: the turtle was given
+   `look: 'down'`, and `look` is a number. The geometry scan caught it.
+7. **Five of v10's "new" puzzles were v12 puzzles under another name** (the turned
+   shape, the bee's route, the robot program, the view from above, the lily patch).
+   The v12 versions stay, because they hold her progress.
 
 ### Bugs caught in v10
 

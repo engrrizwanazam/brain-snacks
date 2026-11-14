@@ -333,35 +333,6 @@ var ART = (function () {
     return parts;
   }
 
-  /* --- cat: pointy ears, slim body, curling upright tail --- */
-  SPECIES.cat = function (c) {
-    var s = c.s, g = c.g, lw = c.lw, o = c.o, i;
-    if (o.shadow !== false) { shadow(g, 0, s * 2.3, s * 1.2, s * .24); }
-    var tail = 'M' + r2(s * .72) + ',' + r2(s * 1.5) + ' q' + r2(s * 1.15) + ',' + r2(-s * .18) + ' ' + r2(s * .88) + ',' + r2(-s * 1.2) + ' q' + r2(-s * .12) + ',' + r2(-s * .46) + ' ' + r2(-s * .52) + ',' + r2(-s * .18);
-    ink(S('path', { d: tail, fill: 'none' }, g), lw * 2.4);
-    ink(S('path', { d: tail, fill: 'none' }, g), lw * 1.4).setAttribute('stroke', c.paint);
-    for (i = 0; i < 4; i++) {
-      ink(S('line', { x1: s * (-.62 + i * .41), y1: s * 1.6, x2: s * (-.62 + i * .41), y2: s * 2.14 }, g), lw * 1.7);
-    }
-    ink(S('ellipse', { cx: 0, cy: s * 1.12, rx: s * .92, ry: s * .74, fill: c.paint }, g), lw);
-    ink(S('path', { d: 'M' + r2(-s * .82) + ',' + r2(-s * .46) + ' L' + r2(-s * .76) + ',' + r2(-s * 1.34) + ' L' + r2(-s * .12) + ',' + r2(-s * .8) + ' Z', fill: c.paint }, g), lw);
-    if (o.ears2 !== false) {
-      ink(S('path', { d: 'M' + r2(s * .82) + ',' + r2(-s * .46) + ' L' + r2(s * .76) + ',' + r2(-s * 1.34) + ' L' + r2(s * .12) + ',' + r2(-s * .8) + ' Z', fill: c.paint }, g), lw);
-    }
-    S('path', { d: 'M' + r2(-s * .7) + ',' + r2(-s * .58) + ' L' + r2(-s * .66) + ',' + r2(-s * 1.08) + ' L' + r2(-s * .32) + ',' + r2(-s * .78) + ' Z', fill: '#FF8FA6', opacity: '.75' }, g);
-    if (o.ears2 !== false) {
-      S('path', { d: 'M' + r2(s * .7) + ',' + r2(-s * .58) + ' L' + r2(s * .66) + ',' + r2(-s * 1.08) + ' L' + r2(s * .32) + ',' + r2(-s * .78) + ' Z', fill: '#FF8FA6', opacity: '.75' }, g);
-    }
-    ink(S('circle', { cx: 0, cy: 0, r: s, fill: c.paint }, g), lw);
-    S('ellipse', { cx: 0, cy: s * .42, rx: s * .52, ry: s * .38, fill: '#FFFFFF', opacity: '.26' }, g);
-    var parts = sleepy(eyes(g, s, { spread: .38, y: -.12, r: .21, look: o.look }), c.mood);
-    whiskers(g, s, .36);
-    ink(S('path', { d: 'M' + r2(-s * .1) + ',' + r2(s * .3) + ' L' + r2(s * .1) + ',' + r2(s * .3) + ' L0,' + r2(s * .43) + ' Z', fill: '#FF7C96' }, g), lw * .55);
-    mouth(g, s, c.mood, .58);
-    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .64, .32); }
-    return parts;
-  };
-
   /* --- mouse: huge round ears, tiny body, long thin tail behind --- */
   SPECIES.mouse = function (c) {
     var s = c.s, g = c.g, lw = c.lw, o = c.o;
@@ -411,27 +382,6 @@ var ART = (function () {
     return parts;
   };
 
-  /* --- dog: floppy ears, snout, tail up --- */
-  SPECIES.dog = function (c) {
-    var s = c.s, g = c.g, lw = c.lw, o = c.o, i;
-    if (o.shadow !== false) { shadow(g, 0, s * 2.3, s * 1.25, s * .25); }
-    ink(S('path', { d: 'M' + r2(s * .84) + ',' + r2(s * 1.2) + ' q' + r2(s * .82) + ',' + r2(-s * .12) + ' ' + r2(s * .64) + ',' + r2(-s * .86), fill: 'none' }, g), lw * 2.2);
-    ink(S('path', { d: 'M' + r2(s * .84) + ',' + r2(s * 1.2) + ' q' + r2(s * .82) + ',' + r2(-s * .12) + ' ' + r2(s * .64) + ',' + r2(-s * .86), fill: 'none' }, g), lw * 1.3).setAttribute('stroke', c.paint);
-    for (i = 0; i < 4; i++) {
-      ink(S('rect', { x: s * (-.8 + i * .45), y: s * 1.48, width: s * .32, height: s * .7, rx: s * .15, fill: c.paint }, g), lw);
-    }
-    ink(S('ellipse', { cx: 0, cy: s * 1.12, rx: s * 1.0, ry: s * .74, fill: c.paint }, g), lw);
-    ink(S('ellipse', { cx: -s * .98, cy: -s * .1, rx: s * .34, ry: s * .66, fill: c.dark }, g), lw);
-    ink(S('ellipse', { cx: s * .98, cy: -s * .1, rx: s * .34, ry: s * .66, fill: c.dark }, g), lw);
-    ink(S('circle', { cx: 0, cy: 0, r: s * .96, fill: c.paint }, g), lw);
-    ink(S('ellipse', { cx: 0, cy: s * .52, rx: s * .5, ry: s * .36, fill: c.light }, g), lw * .8);
-    var parts = sleepy(eyes(g, s, { spread: .36, y: -.18, r: .185, look: o.look }), c.mood);
-    ink(S('ellipse', { cx: 0, cy: s * .38, rx: s * .16, ry: s * .12, fill: INK }, g), lw * .5);
-    ink(S('path', { d: 'M0,' + r2(s * .5) + ' L0,' + r2(s * .62) + ' M0,' + r2(s * .62) + ' q' + r2(-s * .18) + ',' + r2(s * .17) + ' ' + r2(-s * .27) + ',0 M0,' + r2(s * .62) + ' q' + r2(s * .18) + ',' + r2(s * .17) + ' ' + r2(s * .27) + ',0', fill: 'none' }, g), lw * .8);
-    if (o.blush !== false) { blush(g, s, .68, .3); }
-    return parts;
-  };
-
   /* --- fox: sharp upright ears with dark tips, white muzzle and chest,
          and a big brush tail with a white tip. Reads as a fox, not a dog. --- */
   SPECIES.fox = function (c) {
@@ -460,28 +410,6 @@ var ART = (function () {
     whiskers(g, s, .48);
     mouth(g, s, c.mood, .78);
     if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .72, .34); }
-    return parts;
-  };
-
-  /* --- bear: small round ears, chunky body, pale muzzle --- */
-  SPECIES.bear = function (c) {
-    var s = c.s, g = c.g, lw = c.lw, o = c.o, i;
-    if (o.shadow !== false) { shadow(g, 0, s * 2.36, s * 1.36, s * .27); }
-    for (i = 0; i < 2; i++) {
-      ink(S('ellipse', { cx: s * (i ? .52 : -.52), cy: s * 1.84, rx: s * .36, ry: s * .32, fill: c.dark }, g), lw);
-    }
-    ink(S('ellipse', { cx: 0, cy: s * 1.12, rx: s * 1.08, ry: s * .84, fill: c.paint }, g), lw);
-    ink(S('ellipse', { cx: 0, cy: s * 1.24, rx: s * .58, ry: s * .5, fill: c.light }, g), lw * .7);
-    ink(S('circle', { cx: -s * .74, cy: -s * .74, r: s * .33, fill: c.paint }, g), lw);
-    ink(S('circle', { cx: s * .74, cy: -s * .74, r: s * .33, fill: c.paint }, g), lw);
-    S('circle', { cx: -s * .74, cy: -s * .72, r: s * .17, fill: '#FF9FB2', opacity: '.6' }, g);
-    S('circle', { cx: s * .74, cy: -s * .72, r: s * .17, fill: '#FF9FB2', opacity: '.6' }, g);
-    ink(S('circle', { cx: 0, cy: 0, r: s, fill: c.paint }, g), lw);
-    ink(S('ellipse', { cx: 0, cy: s * .48, rx: s * .46, ry: s * .34, fill: c.light }, g), lw * .8);
-    var parts = sleepy(eyes(g, s, { spread: .34, y: -.18, r: .17, look: o.look }), c.mood);
-    ink(S('ellipse', { cx: 0, cy: s * .36, rx: s * .17, ry: s * .13, fill: INK }, g), lw * .5);
-    mouth(g, s, c.mood, .64);
-    if (o.blush !== false) { blush(g, s, .7, .2); }
     return parts;
   };
 
@@ -536,21 +464,6 @@ var ART = (function () {
     S('circle', { cx: s * .36, cy: -s * .06, r: s * .43, fill: c.light, opacity: '.75' }, g);
     var parts = sleepy(eyes(g, s, { spread: .36, y: -.06, r: .25, look: o.look }), c.mood);
     ink(S('path', { d: 'M' + r2(-s * .13) + ',' + r2(s * .32) + ' L' + r2(s * .13) + ',' + r2(s * .32) + ' L0,' + r2(s * .6) + ' Z', fill: '#FF9E2C' }, g), lw * .7);
-    return parts;
-  };
-
-  /* --- fish --- */
-  SPECIES.fish = function (c) {
-    var s = c.s, g = c.g, lw = c.lw, o = c.o;
-    ink(S('path', { d: 'M' + r2(-s * .76) + ',0 l' + r2(-s * .64) + ',' + r2(-s * .58) + ' l0,' + r2(s * 1.16) + ' Z', fill: c.dark }, g), lw);
-    ink(S('path', { d: 'M' + r2(-s * .1) + ',' + r2(-s * .64) + ' q' + r2(s * .3) + ',' + r2(-s * .5) + ' ' + r2(s * .54) + ',' + r2(s * .08), fill: c.dark }, g), lw * .9);
-    ink(S('ellipse', { cx: 0, cy: 0, rx: s, ry: s * .72, fill: c.paint }, g), lw);
-    S('ellipse', { cx: s * .06, cy: s * .28, rx: s * .5, ry: s * .28, fill: '#FFFFFF', opacity: '.2' }, g);
-    var parts = eyes(g, s, { spread: 0, y: -.2, r: .19, look: o.look });
-    parts.open.setAttribute('transform', 'translate(' + r2(s * .44) + ',0)');
-    parts.shut.setAttribute('transform', 'translate(' + r2(s * .44) + ',0)');
-    sleepy(parts, c.mood);
-    ink(S('path', { d: 'M' + r2(s * .64) + ',' + r2(s * .3) + ' q' + r2(s * .16) + ',' + r2(s * .14) + ' ' + r2(s * .3) + ',0', fill: 'none' }, g), lw * .8);
     return parts;
   };
 
@@ -662,6 +575,247 @@ var ART = (function () {
     if (o.blush !== false) { blush(g, s, .58, .3); }
     return parts;
   };
+
+  /* ==========================================================
+     v13 species. Each one is drawn around the two or three things a
+     six-year-old names an animal by, and those things are kept big:
+     a dog is droopy ears, a collar and a tongue; a cow is horns, a
+     pink muzzle and patches; a sheep is wool. At size 11 the fine
+     detail goes and the outline has to carry it alone.
+     sc() scales a path written in head-radius units.
+     ========================================================== */
+  function sc(s, d) {
+    return d.replace(/-?\d*\.?\d+/g, function (n) { return r2(parseFloat(n) * s); });
+  }
+  function P(g, s, d, fill, w) { return ink(S('path', { d: sc(s, d), fill: fill || 'none' }, g), w); }
+  function E(g, s, cx, cy, rx, ry, fill, w, rot) {
+    var a = { cx: r2(cx * s), cy: r2(cy * s), rx: r2(rx * s), ry: r2(ry * s), fill: fill };
+    if (rot) { a.transform = 'rotate(' + rot + ' ' + r2(cx * s) + ' ' + r2(cy * s) + ')'; }
+    var e = S('ellipse', a, g);
+    if (w !== 0) { ink(e, w); }
+    return e;
+  }
+  /* a front leg with a paler paw and two toe lines */
+  function leg(g, s, x, top, bot, w, fill, paw, lw) {
+    ink(S('rect', { x: r2((x - w / 2) * s), y: r2(top * s), width: r2(w * s), height: r2((bot - top) * s), rx: r2(w * s * .46), fill: fill }, g), lw);
+    if (paw) {
+      E(g, s, x, bot - .1, w * .56, .15, paw, lw * .7);
+      if (s >= 12) {
+        ink(S('line', { x1: r2((x - w * .14) * s), y1: r2((bot - .16) * s), x2: r2((x - w * .14) * s), y2: r2((bot - .02) * s) }, g), lw * .45);
+        ink(S('line', { x1: r2((x + w * .14) * s), y1: r2((bot - .16) * s), x2: r2((x + w * .14) * s), y2: r2((bot - .02) * s) }, g), lw * .45);
+      }
+    }
+  }
+  function tailLine(g, s, d, paint, lw, thick) {
+    ink(S('path', { d: sc(s, d), fill: 'none' }, g), lw * (thick || 2.4));
+    ink(S('path', { d: sc(s, d), fill: 'none' }, g), lw * ((thick || 2.4) - 1)).setAttribute('stroke', paint);
+  }
+
+  /* --- cat: sitting, pointed ears, forehead stripes, whiskers, curled tail.
+         tiger: the same animal with round ears, a white muzzle and stripes
+         all the way down. --- */
+  SPECIES.cat = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, i, tig = c.tiger;
+    var stripe = tig ? '#3A2530' : c.dark;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.26, s * 1.2, s * .24); }
+    tailLine(g, s, 'M.7,1.62 q1.18,-.1 .92,-1.16 q-.12,-.46 -.52,-.2', c.paint, lw);
+    if (tig) { for (i = 0; i < 3; i++) { ink(S('line', { x1: r2(s * (1.36 + i * .1)), y1: r2(s * (1.34 - i * .3)), x2: r2(s * (1.62 + i * .06)), y2: r2(s * (1.28 - i * .32)) }, g), lw * .7).setAttribute('stroke', stripe); } }
+    E(g, s, 0, 1.2, .9, .82, c.paint, lw);
+    if (tig) {
+      P(g, s, 'M-.86,1.0 l.34,.08 M-.9,1.3 l.36,.02 M.86,1.0 l-.34,.08 M.9,1.3 l-.36,.02', 'none', lw * .8).setAttribute('stroke', stripe);
+    }
+    E(g, s, 0, 1.36, .46, .5, tig ? '#FFF6E6' : c.light, lw * .7);
+    leg(g, s, -.34, 1.34, 2.16, .4, c.paint, tig ? '#FFF6E6' : c.light, lw);
+    leg(g, s, .34, 1.34, 2.16, .4, c.paint, tig ? '#FFF6E6' : c.light, lw);
+    if (tig) {
+      E(g, s, -.72, -.72, .32, .32, c.paint, lw); E(g, s, .72, -.72, .32, .32, c.paint, lw);
+      E(g, s, -.72, -.7, .15, .15, '#3A2530', 0); E(g, s, .72, -.7, .15, .15, '#3A2530', 0);
+    } else {
+      P(g, s, 'M-.82,-.46 L-.78,-1.36 L-.12,-.8 Z', c.paint, lw);
+      if (o.ears2 !== false) { P(g, s, 'M.82,-.46 L.78,-1.36 L.12,-.8 Z', c.paint, lw); }
+      S('path', { d: sc(s, 'M-.7,-.58 L-.67,-1.08 L-.32,-.78 Z'), fill: '#FF8FA6', opacity: '.8' }, g);
+      if (o.ears2 !== false) { S('path', { d: sc(s, 'M.7,-.58 L.67,-1.08 L.32,-.78 Z'), fill: '#FF8FA6', opacity: '.8' }, g); }
+    }
+    ink(S('circle', { cx: 0, cy: 0, r: s, fill: c.paint }, g), lw);
+    /* the stripes that say "cat" before anything else does */
+    P(g, s, 'M0,-.94 L0,-.58 M-.3,-.88 L-.24,-.6 M.3,-.88 L.24,-.6', 'none', lw * .85).setAttribute('stroke', stripe);
+    if (tig) { P(g, s, 'M-.96,-.1 l.3,.06 M-.92,.22 l.28,-.02 M.96,-.1 l-.3,.06 M.92,.22 l-.28,-.02', 'none', lw * .85).setAttribute('stroke', stripe); }
+    E(g, s, 0, .44, .5, .36, '#FFFFFF', 0).setAttribute('opacity', tig ? '.95' : '.34');
+    var parts = sleepy(eyes(g, s, { spread: .4, y: -.12, r: .21, look: o.look }), c.mood);
+    whiskers(g, s, .38);
+    P(g, s, 'M-.11,.28 L.11,.28 L0,.42 Z', '#FF7C96', lw * .55);
+    mouth(g, s, c.mood, .56);
+    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .66, .3); }
+    return parts;
+  };
+  SPECIES.tiger = function (c) { c.tiger = true; return SPECIES.cat(c); };
+
+  /* --- dog: long droopy ears, an eye patch, a big pale muzzle, tongue out,
+         red collar with a tag, tail up. Nothing here can be read as a bear. --- */
+  SPECIES.dog = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.3, s * 1.25, s * .25); }
+    tailLine(g, s, 'M.8,1.3 q.86,-.06 .72,-.98', c.paint, lw, 2.2);
+    E(g, s, 0, 1.16, .98, .78, c.paint, lw);
+    E(g, s, 0, 1.36, .5, .5, c.light, lw * .7);
+    leg(g, s, -.4, 1.36, 2.2, .42, c.paint, c.light, lw);
+    leg(g, s, .4, 1.36, 2.2, .42, c.paint, c.light, lw);
+    /* collar and tag */
+    P(g, s, 'M-.66,.74 Q0,1.16 .66,.74', 'none', lw * 2.5);
+    ink(S('path', { d: sc(s, 'M-.66,.74 Q0,1.16 .66,.74'), fill: 'none' }, g), lw * 1.5).setAttribute('stroke', '#F0466F');
+    E(g, s, 0, 1.08, .14, .14, '#FFC93C', lw * .6);
+    /* ears hang well below the chin */
+    E(g, s, -1.04, .08, .36, .84, c.dark, lw, 10);
+    E(g, s, 1.04, .08, .36, .84, c.dark, lw, -10);
+    ink(S('circle', { cx: 0, cy: 0, r: r2(s * .96), fill: c.paint }, g), lw);
+    E(g, s, .4, -.2, .36, .42, c.dark, 0, -12).setAttribute('opacity', '.85');
+    E(g, s, 0, .5, .58, .44, c.light, lw * .8);
+    var parts = sleepy(eyes(g, s, { spread: .38, y: -.2, r: .185, look: o.look }), c.mood);
+    E(g, s, 0, .3, .2, .15, INK, lw * .4);
+    if (c.mood === 'sad') { P(g, s, 'M-.22,.72 q.22,-.2 .44,0', 'none', lw * .8); }
+    else {
+      P(g, s, 'M0,.44 L0,.58 M0,.58 q-.2,.2 -.34,.02 M0,.58 q.2,.2 .34,.02', 'none', lw * .8);
+      P(g, s, 'M-.12,.66 q0,.36 .14,.36 q.14,0 .12,-.36 Z', '#FF7C96', lw * .6);
+    }
+    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .7, .32); }
+    return parts;
+  };
+
+  /* --- bear: small round ears right on top, no tail, a barrel of a body with
+         arms folded on it. panda: the same in black and white. --- */
+  SPECIES.bear = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, pan = c.panda;
+    var body = pan ? bodyFill(g, '#FFFFFF') : c.paint, limb = pan ? '#3A3344' : c.dark;
+    var pale = pan ? '#FFFFFF' : c.light;
+    if (o.shadow !== false) { shadow(g, 0, s * 2.36, s * 1.36, s * .27); }
+    E(g, s, -.54, 1.9, .4, .3, limb, lw); E(g, s, .54, 1.9, .4, .3, limb, lw);
+    E(g, s, -.54, 1.94, .2, .13, pan ? '#8A8296' : c.light, 0).setAttribute('opacity', '.7');
+    E(g, s, .54, 1.94, .2, .13, pan ? '#8A8296' : c.light, 0).setAttribute('opacity', '.7');
+    E(g, s, 0, 1.14, 1.1, .86, body, lw);
+    if (!pan) { E(g, s, 0, 1.26, .6, .54, pale, lw * .7); }
+    E(g, s, -.94, 1.08, .28, .5, limb, lw, 18); E(g, s, .94, 1.08, .28, .5, limb, lw, -18);
+    E(g, s, -.74, -.76, .34, .34, pan ? limb : body, lw); E(g, s, .74, -.76, .34, .34, pan ? limb : body, lw);
+    if (!pan) { E(g, s, -.74, -.74, .17, .17, '#FF9FB2', 0).setAttribute('opacity', '.6'); E(g, s, .74, -.74, .17, .17, '#FF9FB2', 0).setAttribute('opacity', '.6'); }
+    ink(S('circle', { cx: 0, cy: 0, r: s, fill: body }, g), lw);
+    if (pan) { E(g, s, -.38, -.14, .3, .38, limb, 0, 24); E(g, s, .38, -.14, .3, .38, limb, 0, -24); }
+    E(g, s, 0, .5, .48, .36, pale, lw * .8);
+    var parts = sleepy(eyes(g, s, { spread: pan ? .38 : .34, y: -.18, r: .17, look: o.look }), c.mood);
+    E(g, s, 0, .36, .18, .13, INK, lw * .4);
+    mouth(g, s, c.mood, .62);
+    if (o.blush !== false && !pan) { blush(g, s, .7, .2); }
+    return parts;
+  };
+  SPECIES.panda = function (c) { c.panda = true; return SPECIES.bear(c); };
+
+  /* --- monkey: ears out at the sides, a pale heart-shaped face, long arms
+         and a tail that curls at the end --- */
+  SPECIES.monkey = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, face = '#F6D7B0';
+    if (o.shadow !== false) { shadow(g, 0, s * 2.24, s * 1.15, s * .23); }
+    P(g, s, 'M.5,1.5 q1.3,.3 1.16,-.7 q-.06,-.56 -.5,-.5 q-.36,.06 -.3,.4 q.06,.26 .3,.2', 'none', lw * 2.2);
+    ink(S('path', { d: sc(s, 'M.5,1.5 q1.3,.3 1.16,-.7 q-.06,-.56 -.5,-.5 q-.36,.06 -.3,.4 q.06,.26 .3,.2'), fill: 'none' }, g), lw * 1.2).setAttribute('stroke', c.paint);
+    leg(g, s, -.34, 1.5, 2.12, .38, c.paint, face, lw);
+    leg(g, s, .34, 1.5, 2.12, .38, c.paint, face, lw);
+    E(g, s, 0, 1.14, .74, .7, c.paint, lw);
+    E(g, s, 0, 1.24, .42, .44, face, lw * .7);
+    /* long arms hanging to the ground */
+    P(g, s, 'M-.62,.86 q-.5,.5 -.32,1.14', 'none', lw * 2.6);
+    ink(S('path', { d: sc(s, 'M-.62,.86 q-.5,.5 -.32,1.14'), fill: 'none' }, g), lw * 1.6).setAttribute('stroke', c.paint);
+    P(g, s, 'M.62,.86 q.5,.5 .32,1.14', 'none', lw * 2.6);
+    ink(S('path', { d: sc(s, 'M.62,.86 q.5,.5 .32,1.14'), fill: 'none' }, g), lw * 1.6).setAttribute('stroke', c.paint);
+    E(g, s, -1.02, -.06, .38, .4, c.paint, lw); E(g, s, 1.02, -.06, .38, .4, c.paint, lw);
+    E(g, s, -1.04, -.06, .2, .22, face, 0); E(g, s, 1.04, -.06, .2, .22, face, 0);
+    ink(S('circle', { cx: 0, cy: 0, r: r2(s * .94), fill: c.paint }, g), lw);
+    P(g, s, 'M0,-.5 q-.62,-.34 -.74,.2 q-.06,.4 .2,.5 q-.3,.5 .54,.62 q.84,-.12 .54,-.62 q.26,-.1 .2,-.5 q-.12,-.54 -.74,-.2 Z', face, lw * .7);
+    var parts = sleepy(eyes(g, s, { spread: .34, y: -.14, r: .18, look: o.look }), c.mood);
+    E(g, s, -.08, .28, .04, .05, INK, 0); E(g, s, .08, .28, .04, .05, INK, 0);
+    mouth(g, s, c.mood, .46);
+    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .56, .26); }
+    return parts;
+  };
+
+  /* --- cow: horns, sideways ears, a big pink muzzle and dark patches --- */
+  SPECIES.cow = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, i, patch = '#4A4058';
+    if (o.shadow !== false) { shadow(g, 0, s * 2.36, s * 1.4, s * .27); }
+    P(g, s, 'M1.0,1.0 q.5,.2 .42,.86', 'none', lw * 1.1);
+    E(g, s, 1.44, 1.94, .12, .16, patch, lw * .6);
+    for (i = 0; i < 4; i++) {
+      ink(S('rect', { x: r2(s * (-.9 + i * .5)), y: r2(s * 1.44), width: r2(s * .36), height: r2(s * .8), rx: r2(s * .12), fill: c.paint }, g), lw);
+      ink(S('rect', { x: r2(s * (-.9 + i * .5)), y: r2(s * 2.04), width: r2(s * .36), height: r2(s * .2), rx: r2(s * .06), fill: patch }, g), lw * .8);
+    }
+    E(g, s, 0, 1.12, 1.14, .8, c.paint, lw);
+    E(g, s, -.56, 1.22, .34, .28, patch, 0, -20); E(g, s, .62, .98, .3, .24, patch, 0, 16);
+    E(g, s, .04, 1.86, .26, .16, '#FF9FB2', lw * .7);
+    P(g, s, 'M-.5,-.78 q-.34,-.2 -.26,-.62 q.26,.1 .46,.44 Z', '#FFF2D0', lw * .8);
+    P(g, s, 'M.5,-.78 q.34,-.2 .26,-.62 q-.26,.1 -.46,.44 Z', '#FFF2D0', lw * .8);
+    E(g, s, -1.08, -.4, .42, .2, c.paint, lw, -16); E(g, s, 1.08, -.4, .42, .2, c.paint, lw, 16);
+    E(g, s, -1.08, -.4, .24, .09, '#FF9FB2', 0, -16); E(g, s, 1.08, -.4, .24, .09, '#FF9FB2', 0, 16);
+    P(g, s, 'M0,-.96 q.9,0 .9,.5 q0,.5 -.16,.86 q-.3,.5 -.74,.5 q-.44,0 -.74,-.5 q-.16,-.36 -.16,-.86 q0,-.5 .9,-.5 Z', c.paint, lw);
+    E(g, s, -.44, -.36, .34, .4, patch, 0, 14);
+    E(g, s, 0, .52, .62, .4, '#FFB0C0', lw * .8);
+    E(g, s, -.2, .5, .07, .1, '#B05A70', 0); E(g, s, .2, .5, .07, .1, '#B05A70', 0);
+    var parts = sleepy(eyes(g, s, { spread: .38, y: -.24, r: .17, look: o.look }), c.mood);
+    if (c.mood !== 'sad') { P(g, s, 'M-.2,.72 q.2,.14 .4,0', 'none', lw * .7); }
+    return parts;
+  };
+
+  /* --- sheep: a cloud of wool with a dark face poking out of it --- */
+  SPECIES.sheep = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, i, a, face = '#5A5068';
+    if (o.shadow !== false) { shadow(g, 0, s * 2.26, s * 1.3, s * .25); }
+    for (i = 0; i < 4; i++) {
+      ink(S('rect', { x: r2(s * (-.7 + i * .4)), y: r2(s * 1.5), width: r2(s * .2), height: r2(s * .66), rx: r2(s * .08), fill: face }, g), lw * .9);
+    }
+    for (i = 0; i < 10; i++) {
+      a = i * Math.PI / 5;
+      E(g, s, Math.cos(a) * .86, 1.1 + Math.sin(a) * .56, .36, .34, c.paint, lw);
+    }
+    E(g, s, 0, 1.1, .92, .62, c.paint, 0);
+    E(g, s, -.98, -.2, .36, .17, face, lw, 24); E(g, s, .98, -.2, .36, .17, face, lw, -24);
+    E(g, s, 0, .06, .66, .8, face, lw);
+    for (i = 0; i < 4; i++) { E(g, s, -.54 + i * .36, -.72 - (i === 1 || i === 2 ? .12 : 0), .3, .28, c.paint, lw); }
+    E(g, s, 0, -.66, .5, .2, c.paint, 0);
+    var parts = sleepy(eyes(g, s, { spread: .3, y: -.08, r: .17, look: o.look }), c.mood);
+    P(g, s, 'M-.1,.42 L.1,.42 L0,.54 Z', '#FF9FB2', lw * .5);
+    ink(S('path', { d: sc(s, c.mood === 'sad' ? 'M-.14,.7 q.14,-.12 .28,0' : 'M-.14,.62 q.14,.14 .28,0'), fill: 'none' }, g), lw * .7).setAttribute('stroke', '#FFF6E6');
+    return parts;
+  };
+
+  /* --- turtle: a patterned shell with a head and four flippers poking out --- */
+  SPECIES.turtle = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o, shell = '#8A6A3C', plate = '#B08A50';
+    if (o.shadow !== false) { shadow(g, 0, s * 2.1, s * 1.36, s * .24); }
+    E(g, s, -.98, 1.0, .34, .2, c.paint, lw, 30); E(g, s, .98, 1.0, .34, .2, c.paint, lw, -30);
+    E(g, s, -.84, 1.78, .34, .22, c.paint, lw, -30); E(g, s, .84, 1.78, .34, .22, c.paint, lw, 30);
+    P(g, s, 'M0,1.96 l0,.24', 'none', lw * 1.2).setAttribute('stroke', c.dark);
+    E(g, s, 0, 1.34, 1.06, .78, shell, lw);
+    P(g, s, 'M0,.88 L.4,1.1 L.4,1.56 L0,1.8 L-.4,1.56 L-.4,1.1 Z', plate, lw * .7);
+    P(g, s, 'M.4,1.1 L.86,.94 M.4,1.56 L.88,1.72 M-.4,1.1 L-.86,.94 M-.4,1.56 L-.88,1.72 M0,.88 L0,.58 M0,1.8 L0,2.1', 'none', lw * .7);
+    ink(S('circle', { cx: 0, cy: 0, r: r2(s * .78), fill: c.paint }, g), lw);
+    var parts = sleepy(eyes(g, s, { spread: .32, y: -.12, r: .19, look: o.look }), c.mood);
+    mouth(g, s, c.mood, .3);
+    if (o.blush !== false && c.mood !== 'sad') { blush(g, s, .52, .16); }
+    return parts;
+  };
+
+  /* --- fish: forked tail, back fin, side fin and two bands --- */
+  SPECIES.fish = function (c) {
+    var s = c.s, g = c.g, lw = c.lw, o = c.o;
+    P(g, s, 'M-.8,0 L-1.5,-.66 L-1.3,0 L-1.5,.66 Z', c.dark, lw);
+    P(g, s, 'M-.3,-.62 q.34,-.6 .78,.02', c.dark, lw * .9);
+    E(g, s, 0, 0, 1, .72, c.paint, lw);
+    P(g, s, 'M-.38,-.64 q.2,.64 0,1.28 M-.02,-.7 q.2,.7 0,1.4', 'none', lw * 1.3).setAttribute('stroke', c.light);
+    E(g, s, .06, .3, .5, .26, '#FFFFFF', 0).setAttribute('opacity', '.2');
+    P(g, s, 'M.02,.14 q-.4,.2 -.3,.54 q.4,-.02 .5,-.4 Z', c.dark, lw * .8);
+    var parts = eyes(g, s, { spread: 0, y: -.2, r: .2, look: o.look });
+    parts.open.setAttribute('transform', 'translate(' + r2(s * .46) + ',0)');
+    parts.shut.setAttribute('transform', 'translate(' + r2(s * .46) + ',0)');
+    sleepy(parts, c.mood);
+    P(g, s, 'M.66,.3 q.16,.14 .3,0', 'none', lw * .8);
+    return parts;
+  };
+
 
   /* ==========================================================
      SCENERY

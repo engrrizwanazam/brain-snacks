@@ -155,6 +155,16 @@
   function later2(fn, ms) { timers.push(setTimeout(fn, ms)); }
 
   BS.registerMode('cups', {
+    name: 'Cups', shelf: 'memory', color: '#F58BA0', shade: '#C05F73',
+    keys: ['bs.cupsBest'], best: ['bs.cupsBest', 'found', 'found'], blurb: 'Where is the ball?',
+    icon: function (a) {
+      var i;
+    for (i = 0; i < 3; i++) {
+      ART.ink(ART.S('path', { d: 'M' + (14 + i * 22) + ',34 L' + (18 + i * 22) + ',12 L' +
+        (34 + i * 22) + ',12 L' + (38 + i * 22) + ',34 Z', fill: '#F0466F' }, a), 2.4);
+    }
+    ART.ink(ART.S('circle', { cx: 42, cy: 8, r: 6, fill: '#FFC93C' }, a), 2.2);
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Cups');

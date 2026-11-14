@@ -117,6 +117,16 @@
   }
 
   BS.registerMode('opp', {
+    name: 'Opposite Day', shelf: 'quick', color: '#9FD8C4', shade: '#6EA592',
+    keys: ['bs.oppBest'], best: ['bs.oppBest', 'right', 'right'], blurb: 'Tap the other one',
+    icon: function (a) {
+      var i;
+    ART.ink(ART.S('ellipse', { cx: 22, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
+    ART.ink(ART.S('ellipse', { cx: 62, cy: 30, rx: 15, ry: 6, fill: '#5E4830' }, a), 2.4);
+    ART.ink(ART.S('circle', { cx: 22, cy: 18, r: 8, fill: '#F3E4C6' }, a), 2.4);
+    ART.ink(ART.S('path', { d: 'M40,14 L58,14 M52,9 L58,14 L52,19', fill: 'none' }, a), 3)
+      .setAttribute('stroke', '#3FBF7F');
+    },
     start: function (a) {
       api = a; timers = [];
       api.title('Opposite Day');

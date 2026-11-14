@@ -145,3 +145,15 @@ var KIT = (function () {
   return { hit: hit, pad: pad, glyph: glyph, frame: frame, options: options, orderGame: orderGame,
            button: button, backdrop: backdrop, shuffle: shuffle, rnd: rnd, hearts: hearts, banner: banner };
 })();
+
+/* Every animal the art file can draw, with the colour it is usually given.
+   Games that just need "some animals" take them from here. */
+KIT.ZOO = [
+  { k: 'mouse', f: '#C9BFD6' }, { k: 'frog', f: '#5FD08A' }, { k: 'duck', f: '#FFE066' },
+  { k: 'hen', f: '#FFF0C0' }, { k: 'bunny', f: '#F5E2D0' }, { k: 'cat', f: '#FFB03A' },
+  { k: 'fox', f: '#E8722F' }, { k: 'dog', f: '#C98B52' }, { k: 'pig', f: '#FF9FB2' },
+  { k: 'lion', f: '#E8A63A' }, { k: 'bear', f: '#B07A4C' }, { k: 'elephant', f: '#A9A6C4' },
+  { k: 'owl', f: '#C58B4F' }, { k: 'penguin', f: '#4A5578' }, { k: 'monkey', f: '#A8713F' },
+  { k: 'cow', f: '#FFF6E6' }, { k: 'sheep', f: '#FFF6E6' }, { k: 'turtle', f: '#7FCF7A' },
+  { k: 'panda', f: '#FFFFFF' }, { k: 'tiger', f: '#F59A3A' }
+];
